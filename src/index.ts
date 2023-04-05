@@ -1,91 +1,116 @@
 import express, { Express, Request, Response, application } from 'express';
 import bodyParser from 'body-parser';
-import {Business} from "./models/business";
+import { Business } from "./models/business";
 import {Api} from './models/api';
+import { User } from './models/user';
+import { Database } from 'sqlite3';
+import * as dotenv from 'dotenv';
 
 const app: Express = express();
 const port = 3000;
+const db = new Database('db.sqlite');
+dotenv.config();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
     extended: true
 }));
 
-app.post(`${Api.BusinessPath}/add`, (req: Request, res: Response) => {
+const addBusinessPath = `${Api.BusinessPath}/add`;
+app.post(addBusinessPath, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`POST ${Api.BusinessPath}/add received`);
+    res.send(`POST ${addBusinessPath} received`);
 });
 
-app.post(`${Api.BusinessPath}/modify/:id`, (req: Request, res: Response) => {
+const modifyBusinessPath = (`${Api.BusinessPath}/modify`);
+app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`POST ${Api.BusinessPath}/modify received`);
+    res.send(`POST ${modifyBusinessPath} received`);
 });
 
-app.post(`${Api.BusinessPath}/remove/:id`, (req: Request, res: Response) => {
+const removeBusinessPath = `${Api.BusinessPath}/remove`;
+app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`POST ${Api.BusinessPath}/remove received`);
+    res.send(`POST ${removeBusinessPath} received`);
 });
 
-app.get(`${Api.BusinessPath}es`, (req: Request, res: Response) => {
+const getBusinessesPath = `${Api.BusinessPath}es`;
+app.get(getBusinessesPath, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`GET ${Api.BusinessPath}es received`);
+    res.send(`GET ${getBusinessesPath} received`);
 });
 
-app.post(`${Api.ReviewPath}/new`, (req: Request, res: Response) => {
+const addReviewPath = `${Api.ReviewPath}/add`;
+app.post(addReviewPath, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`GET ${Api.ReviewPath}/new received`);
+    res.send(`GET ${addReviewPath} received`);
 });
 
-app.post(`${Api.ReviewPath}/modify/:id`, (req: Request, res: Response) => {
+const modifyReviewPath = `${Api.ReviewPath}/modify`;
+app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`GET ${Api.ReviewPath}/modify received`);
+    res.send(`GET ${modifyReviewPath} received`);
 });
 
-app.post(`${Api.ReviewPath}/delete/:id`, (req: Request, res: Response) => {
+const removeReviewPath = `${Api.ReviewPath}/remove`; 
+app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`POST ${Api.ReviewPath}/delete received`);
+    res.send(`POST ${removeReviewPath} received`);
 });
 
-app.post(`${Api.PhotoPath}/upload`, (req: Request, res: Response) => {
+const addPhotoPath = `${Api.PhotoPath}/add`
+app.post(addPhotoPath, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`POST ${Api.PhotoPath}/upload received`);
+    res.send(`POST ${addPhotoPath} received`);
 });
 
-app.post(`${Api.PhotoPath}/delete/:id`, (req: Request, res: Response) => {
+const removePhotoPath = `${Api.PhotoPath}/remove`;
+app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`POST ${Api.PhotoPath}/delete received`);
+    res.send(`POST ${removePhotoPath} received`);
 });
 
-app.post(`${Api.PhotoPath}/modify/:id`, (req: Request, res: Response) => {
+const modifyPhotoPath = `${Api.PhotoPath}/modify`;
+app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
     res.status(200);
-    res.send(`POST ${Api.PhotoPath}/modify received`);
+    res.send(`POST ${modifyPhotoPath} received`);
 });
 
-app.post(`${Api.UserPath}/create`, (req: Request, res: Response) => {     res.status(200);
+const addUserPath = `${Api.UserPath}/add`;
+app.post(addUserPath, (req: Request, res: Response) => {
+    console.log(`POST ${addUserPath} received`);
     res.status(200);
-    res.send(`GET ${Api.UserPath}/create received`);
+    const body = req.body;
+    res.json(req.body);
+    const userType: string = req.body["isBusinessOwner"] ? "businessOwner" : "user";
+    const newUser:User = new User(1, req.body["email"], req.body["password"], userType);
+    console.log(newUser);
 });
 
-app.post(`${Api.UserPath}/login`, (req: Request, res: Response) => {     res.status(200);
+const userLoginPath = `${Api.UserPath}/login`;
+app.post(userLoginPath, (req: Request, res: Response) => {
+    console.log(`GET ${userLoginPath} received`);
     res.status(200);
-    res.send(`GET ${Api.UserPath}/login received`);
 });
 
-app.get(`${Api.UserPath}/businesses`, (req: Request, res: Response) => {     res.status(200);
+const userBusinessesPath = `${Api.UserPath}/businesses`
+app.get(userBusinessesPath, (req: Request, res: Response) => {     res.status(200);
     res.status(200);
     res.send(`GET ${Api.UserPath}/businesses received`);
 });
 
-app.get(`${Api.UserPath}/reviews`, (req: Request, res: Response) => {     res.status(200);
+const userReviewsPath = `${Api.UserPath}/reviews`
+app.get(userReviewsPath, (req: Request, res: Response) => {     res.status(200);
     res.status(200);
     res.send(`GET ${Api.UserPath}/reviews received`);
 });
 
-app.get(`${Api.UserPath}/photos`, (req: Request, res: Response) => {     res.status(200);
+const userPhotosPath = `${Api.UserPath}/photos`;
+app.get(userPhotosPath, (req: Request, res: Response) => {     res.status(200);
     res.status(200);
     res.send(`GET ${Api.UserPath}/photos received`);
 });
 
 app.listen(port, () => {
-    console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
+    console.log(`⚡️[server]: Server is running at http://localhost:${port}, or 172.31.47.53:${port} remotely`);
 });
