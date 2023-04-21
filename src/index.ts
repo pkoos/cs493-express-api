@@ -44,7 +44,8 @@ app.post(addBusinessPath, (req: Request, res: Response) => {
     }
     else {
         res.status(400);
-        res.json({"status": "invalid body"});
+        res.json({"status": "error",
+        "message": "invalid body"});
     }
 });
 
@@ -92,7 +93,7 @@ const addReviewPath = `${baseApiPath}/review/add`;
 app.post(addReviewPath, (req: Request, res: Response) => {
     console.log("adding a review!");
     const nr: Review = {
-        id: 1,
+        id: reviews.length + 1,
         businessId: req.body['businessId'],
         stars: req.body['stars'],
         dollars: req.body['dollars'],
@@ -126,8 +127,26 @@ app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
 
 const addPhotoPath = `${baseApiPath}/photo/add`
 app.post(addPhotoPath, (req: Request, res: Response) => {
-    res.status(200);
-    res.send(`POST ${addPhotoPath} received`);
+    console.log("adding a photo!");
+    const new_photo: Photo = {
+        id: photos.length + 1,
+        userId: req.body['userId'],
+        image: req.body['image'],
+        caption: req.body['caption']
+    };
+
+    if(isValidPhoto(new_photo)) {
+        photos.push(new_photo);
+        res.statusCode = 200;
+        res.json({"status": "success",
+        "photo": new_photo});
+        console.log("It's a valid photo! Congratulations")
+    }
+    else {
+        res.status(400);
+        res.json({"status": "error",
+        "message": "invalid body"});
+    }
 });
 
 const removePhotoPath = `${baseApiPath}/photo/remove`;
