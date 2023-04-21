@@ -3,16 +3,9 @@ import bodyParser from 'body-parser';
 import { Business, isValidBusiness, findById } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
-// import { User } from './models/user';
-// import * as dotenv from 'dotenv';
-// import { DbController } from './controllers/db-controller';
-// import { UserController } from './controllers/user-controller';
 
 const app: Express = express();
 const port = 3000;
-// const db = new DbController();
-// console.log(db);
-// dotenv.config();
 
 let businesses: Business[] = [];
 let reviews: Review[] = [];
@@ -28,6 +21,7 @@ const baseApiPath: string = "/api/v1";
 
 const addBusinessPath = `${baseApiPath}/business/add`;
 app.post(addBusinessPath, (req: Request, res: Response) => {
+    console.log("adding a business!");
     const nb: Business = {
         id: businesses.length + 1,
         name: req.body["name"],
@@ -49,9 +43,8 @@ app.post(addBusinessPath, (req: Request, res: Response) => {
         console.log("It's valid! Congratulations");
     }
     else {
-        console.log("wtf did I receive?!?!?!?");
         res.status(400);
-        res.json({"status": "invalid body"})
+        res.json({"status": "invalid body"});
     }
 });
 
@@ -63,15 +56,17 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     })
     if (mb) {
         res.status(200);
-        res.send("Match found!");    
+        res.send("Match found!");
+        console.log(mb);
+        for(const [key, value] of Object.entries(req.body)) {
+            console.log(`${key}: ${value}`)
+        }
     }
     else {
         res.status(404)
         res.send("Match not found");
     }
-    // console.log(mb);
-    // res.status(200);
-    // res.send(`POST ${modifyBusinessPath} received`);
+
 });
 
 const removeBusinessPath = `${baseApiPath}/business/remove`;
@@ -95,8 +90,26 @@ app.get(getBusinessesPath, (req: Request, res: Response) => {
 
 const addReviewPath = `${baseApiPath}/review/add`;
 app.post(addReviewPath, (req: Request, res: Response) => {
-    res.status(200);
-    res.send(`GET ${addReviewPath} received`);
+    console.log("adding a review!");
+    const nr: Review = {
+        id: 1,
+        businessId: req.body['businessId'],
+        stars: req.body['stars'],
+        dollars: req.body['dollars'],
+        reviewText: "My review"
+    };
+
+    if(isValidReview(nr)) {
+        reviews.push(nr);
+        res.statusCode = 200;
+        res.json({"status": "success",
+        "review": nr});
+    }
+    else {
+        res.status(400);
+        res.json({"status": "error",
+        "message": "invalid body"});
+    }
 });
 
 const modifyReviewPath = `${baseApiPath}/review/modify`;
@@ -129,39 +142,39 @@ app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
     res.send(`POST ${modifyPhotoPath} received`);
 });
 
-const addUserPath = `${baseApiPath}/user/add`;
-app.post(addUserPath, (req: Request, res: Response) => {
-    // console.log(`POST ${addUserPath} received`);
-    // res.status(200);
-    // const body = req.body;
-    // res.json(req.body);
-    // const newUser:User = new User(1, req.body["email"], req.body["password"], req.body["isBusinessOwner"]);
-    // console.log(newUser);
-});
+// const addUserPath = `${baseApiPath}/user/add`;
+// app.post(addUserPath, (req: Request, res: Response) => {
+//     // console.log(`POST ${addUserPath} received`);
+//     // res.status(200);
+//     // const body = req.body;
+//     // res.json(req.body);
+//     // const newUser:User = new User(1, req.body["email"], req.body["password"], req.body["isBusinessOwner"]);
+//     // console.log(newUser);
+// });
 
-const userLoginPath = `${baseApiPath}/user/login`;
-app.post(userLoginPath, (req: Request, res: Response) => {
-    console.log(`GET ${userLoginPath} received`);
-    res.status(200);
-});
+// const userLoginPath = `${baseApiPath}/user/login`;
+// app.post(userLoginPath, (req: Request, res: Response) => {
+//     console.log(`GET ${userLoginPath} received`);
+//     res.status(200);
+// });
 
-const userBusinessesPath = `${baseApiPath}/user/businesses`
-app.get(userBusinessesPath, (req: Request, res: Response) => {     res.status(200);
-    res.status(200);
-    res.send(`GET ${userBusinessesPath} received`);
-});
+// const userBusinessesPath = `${baseApiPath}/user/businesses`
+// app.get(userBusinessesPath, (req: Request, res: Response) => {     res.status(200);
+//     res.status(200);
+//     res.send(`GET ${userBusinessesPath} received`);
+// });
 
-const userReviewsPath = `${baseApiPath}/users/reviews`
-app.get(userReviewsPath, (req: Request, res: Response) => {     res.status(200);
-    res.status(200);
-    res.send(`GET ${userReviewsPath} received`);
-});
+// const userReviewsPath = `${baseApiPath}/users/reviews`
+// app.get(userReviewsPath, (req: Request, res: Response) => {     res.status(200);
+//     res.status(200);
+//     res.send(`GET ${userReviewsPath} received`);
+// });
 
-const userPhotosPath = `${baseApiPath}/users/photos`;
-app.get(userPhotosPath, (req: Request, res: Response) => {     res.status(200);
-    res.status(200);
-    res.send(`GET ${userPhotosPath} received`);
-});
+// const userPhotosPath = `${baseApiPath}/users/photos`;
+// app.get(userPhotosPath, (req: Request, res: Response) => {     res.status(200);
+//     res.status(200);
+//     res.send(`GET ${userPhotosPath} received`);
+// });
 
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}, or 172.31.47.53:${port} remotely`);

@@ -18,7 +18,6 @@ export interface BusinessInterface {
 export class Business {
 
     id: number = 0;
-    // ownerId: number = 0;
     name: string = "";
     address: string = "";
     city: string = "";
@@ -38,7 +37,6 @@ export class Business {
 export function isValidBusiness(business: Business): boolean {
     const valid: boolean = 
         business.id != 0 && business.id != undefined &&
-        // business.ownerId != 0 && business.ownerId != undefined &&
         business.name != "" && business.name != undefined &&
         business.address != "" && business.address != undefined &&
         business.city != "" && business.city != undefined &&
