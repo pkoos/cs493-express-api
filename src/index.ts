@@ -1,6 +1,6 @@
 import express, { Express, Request, Response, application } from 'express';
 import bodyParser from 'body-parser';
-import { Business, isValidBusiness, findById } from './models/business';
+import { Business, isValidBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
 
@@ -24,6 +24,7 @@ app.post(addBusinessPath, (req: Request, res: Response) => {
     console.log("adding a business!");
     const nb: Business = {
         id: businesses.length + 1,
+        ownerId: req.body["ownerId"],
         name: req.body["name"],
         address: req.body["address"],
         city: req.body["city"],
@@ -54,7 +55,8 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     const business_id:number = parseInt(req.params.id);
     let mb = businesses.find((bus) => {
         return bus.id == business_id;
-    })
+    });
+
     if (mb) {
         res.status(200);
         res.send("Match found!");
@@ -97,7 +99,7 @@ app.post(addReviewPath, (req: Request, res: Response) => {
         businessId: req.body['businessId'],
         stars: req.body['stars'],
         dollars: req.body['dollars'],
-        reviewText: "My review"
+        reviewText: req.body['reviewText']
     };
 
     if(isValidReview(nr)) {
@@ -128,24 +130,29 @@ app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
 const addPhotoPath = `${baseApiPath}/photo/add`
 app.post(addPhotoPath, (req: Request, res: Response) => {
     console.log("adding a photo!");
+    console.log(JSON.stringify(req.body));
     const new_photo: Photo = {
         id: photos.length + 1,
         userId: req.body['userId'],
-        image: req.body['image'],
+        businessId: req.body['businessId'],
+        fileName: req.body['fileName'],
         caption: req.body['caption']
     };
 
     if(isValidPhoto(new_photo)) {
         photos.push(new_photo);
         res.statusCode = 200;
-        res.json({"status": "success",
-        "photo": new_photo});
-        console.log("It's a valid photo! Congratulations")
+        res.json({
+            "status": "success",
+            "photo": new_photo
+        });
     }
     else {
         res.status(400);
-        res.json({"status": "error",
-        "message": "invalid body"});
+        res.json({
+            "status": "error",
+            "message": "invalid body"
+        });
     }
 });
 

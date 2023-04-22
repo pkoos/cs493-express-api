@@ -1,14 +1,16 @@
 export interface PhotoInterface {
     id: number;
     userId: number;
-    image: any;
+    businessId: number;
+    fileName: any;
     caption: string;
 }
 
 export class Photo {
     id: number = 0;
     userId: number = 0;
-    image: any;
+    businessId: number = 0;
+    fileName: string = "";
     caption: string = "";
 
     public constructor(init?: Partial<Photo>) {
@@ -19,11 +21,10 @@ export class Photo {
 
 export function isValidPhoto(photo: Photo): boolean {
     const valid: boolean = 
-        photo.id != 0 && photo.id != undefined &&
-        photo.userId != 0 && photo.userId != undefined &&
-        photo.image != undefined &&
-        photo.caption != "" && photo.caption != undefined;
+        photo.id != undefined && photo.id != 0 && 
+        photo.userId != undefined && photo.userId != 0 && 
+        photo.businessId != undefined && photo.businessId != 0 &&
+        photo.fileName != undefined && photo.fileName != "";
 
-    
     return valid;
 }

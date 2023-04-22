@@ -1,8 +1,6 @@
-import { isDataView } from "util/types";
-
 export interface BusinessInterface {
     id: number;
-    // ownerId: number;
+    ownerId: number;
     name: string;
     address: string;
     city: string;
@@ -18,6 +16,7 @@ export interface BusinessInterface {
 export class Business {
 
     id: number = 0;
+    ownerId: number = 0;
     name: string = "";
     address: string = "";
     city: string = "";
@@ -36,15 +35,16 @@ export class Business {
 
 export function isValidBusiness(business: Business): boolean {
     const valid: boolean = 
-        business.id != 0 && business.id != undefined &&
-        business.name != "" && business.name != undefined &&
-        business.address != "" && business.address != undefined &&
-        business.city != "" && business.city != undefined &&
-        business.state != "" && business.state != undefined &&
-        business.zip != "" && business.zip != undefined &&
-        business.phone != "" && business.phone != undefined &&
-        business.category != "" && business.category != undefined &&
-        business.subcategory != "" && business.subcategory != undefined;
+        business.id != undefined && business.id != 0 &&
+        business.ownerId != undefined && business.ownerId != 0 &&
+        business.name != undefined && business.name != "" && 
+        business.address != undefined && business.address != "" && 
+        business.city != undefined && business.city != "" && 
+        business.state != undefined && business.state != "" && 
+        business.zip != undefined && business.zip != "" && 
+        business.phone != undefined && business.phone != "" && 
+        business.category != undefined && business.category != "" && 
+        business.subcategory != undefined && business.subcategory != "";
 
     return valid;
 }
