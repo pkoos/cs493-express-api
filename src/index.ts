@@ -3,14 +3,18 @@ import bodyParser from 'body-parser';
 import { Business, isValidBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
+import { request } from 'http';
+import { resolveTxt } from 'dns';
 
 const app: Express = express();
 const port = 3000;
 
 let businesses: Business[] = [];
+let businessId: number = 0;
 let reviews: Review[] = [];
+let reviewId: number = 0;
 let photos: Photo[] = [];
-
+let photoId: number = 0;
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -21,9 +25,10 @@ const baseApiPath: string = "/api/v1";
 
 const addBusinessPath = `${baseApiPath}/business/add`;
 app.post(addBusinessPath, (req: Request, res: Response) => {
-    console.log("adding a business!");
+    console.log(`Attempting to add a business: ${JSON.stringify(req.body)}`);
+    
     const nb: Business = {
-        id: businesses.length + 1,
+        id: ++businessId,
         ownerId: req.body["ownerId"],
         name: req.body["name"],
         address: req.body["address"],
@@ -39,14 +44,17 @@ app.post(addBusinessPath, (req: Request, res: Response) => {
     if(isValidBusiness(nb)) {
         businesses.push(nb);
         res.statusCode = 200;
-        res.json({"status": "success",
-        "business": nb})
-        console.log("It's valid! Congratulations");
+        res.json({
+            "status": "success",
+            "business": nb
+        });
     }
     else {
         res.status(400);
-        res.json({"status": "error",
-        "message": "invalid body"});
+        res.json({
+            "status": "error",
+            "message": "invalid body"
+        });
     }
 });
 
@@ -67,15 +75,47 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     }
     else {
         res.status(404)
-        res.send("Match not found");
+        res.json({
+            "status": "error",
+            "message": "attribute not found"
+        });
     }
 
 });
 
 const removeBusinessPath = `${baseApiPath}/business/remove`;
 app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
-    res.status(200);
-    res.send(`POST ${removeBusinessPath} received`);
+    const business_id:number = parseInt(req.params.id);
+    const request_owner_id = req.body["ownerId"];
+
+    if (request_owner_id != undefined) {
+        const rb = businesses.find((bus) => {
+            return bus.id == business_id;
+        });
+        if(rb && request_owner_id == rb.ownerId) {
+            const index: number = businesses.findIndex(bus => bus.id == rb.id);
+            businesses.splice(index, 1);
+        } else {
+            res.status(400);
+            res.json({
+                "status": "error",
+                "message": "Unauthorized to remove a business you do not own."
+            });
+        }
+        res.status(200);
+        res.json({
+            "status": "success",
+            "message": "removed business",
+            "business": rb
+        });
+    }
+    else {
+        res.status(400);
+        res.json({
+            "status": "error",
+            "message": "Invalid ownerId."
+        });
+    }
 });
 
 const businessDetailsPath = `${baseApiPath}/business/`
@@ -95,7 +135,7 @@ const addReviewPath = `${baseApiPath}/review/add`;
 app.post(addReviewPath, (req: Request, res: Response) => {
     console.log("adding a review!");
     const nr: Review = {
-        id: reviews.length + 1,
+        id: ++reviewId,
         businessId: req.body['businessId'],
         stars: req.body['stars'],
         dollars: req.body['dollars'],
@@ -132,7 +172,7 @@ app.post(addPhotoPath, (req: Request, res: Response) => {
     console.log("adding a photo!");
     console.log(JSON.stringify(req.body));
     const new_photo: Photo = {
-        id: photos.length + 1,
+        id: ++photoId,
         userId: req.body['userId'],
         businessId: req.body['businessId'],
         fileName: req.body['fileName'],
