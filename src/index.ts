@@ -3,8 +3,6 @@ import bodyParser from 'body-parser';
 import { Business, isValidBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
-import { request } from 'http';
-import { resolveTxt } from 'dns';
 
 const app: Express = express();
 const port = 3000;
@@ -64,20 +62,41 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     let mb = businesses.find((bus) => {
         return bus.id == business_id;
     });
+    const owner_id = req.body['ownerId'];
 
-    if (mb) {
-        res.status(200);
-        res.send("Match found!");
-        console.log(mb);
-        for(const [key, value] of Object.entries(req.body)) {
-            console.log(`${key}: ${value}`)
+    if (mb) { // the business exists
+        if (mb.ownerId == owner_id) { // the ownerId matches the business
+            console.log(`Owner matches business owner.`);
+            
+            mb.name = req.body['name'] ? req.body['name'] : mb.name;
+            mb.address = req.body['address'] ? req.body['address'] : mb.address;
+            mb.city = req.body['city'] ? req.body['city'] : mb.city;
+            mb.state = req.body['state'] ? req.body['state'] : mb.state;
+            mb.zip = req.body['zip'] ? req.body['zip'] : mb.zip;
+            mb.phone = req.body['phone'] ? req.body['phone'] : mb.phone;
+            mb.category = req.body['category'] ? req.body['category'] : mb.category;
+            mb.subcategory = req.body['subcategory'] ? req.body['subcategory'] : mb.subcategory;
+            mb.website = req.body['website'] ? req.body['website'] : mb.website;
+            mb.email = req.body['email'] ? req.body['email'] : mb.email;
+            res.status(200);
+            res.json({
+                "status": "success",
+                "business": mb
+            });
+        }
+        else { // requester does not own the business
+            res.status(400);
+            res.json({
+                "status": "error",
+                "message": "Cannot modify a business you do not own."
+            });
         }
     }
     else {
         res.status(404)
         res.json({
             "status": "error",
-            "message": "attribute not found"
+            "message": "business not found"
         });
     }
 
@@ -113,21 +132,77 @@ app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
         res.status(400);
         res.json({
             "status": "error",
-            "message": "Invalid ownerId."
+            "message": "Invalid request body."
         });
     }
 });
 
-const businessDetailsPath = `${baseApiPath}/business/`
+const businessDetailsPath = `${baseApiPath}/business`
 app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
-    res.status(200);
-    res.send(`GET ${businessDetailsPath} received`);
+    console.log("Attempting to get business details");
+    const business_id:number = parseInt(req.params.id);
+    const bd = businesses.find((bus) => {
+        return bus.id == business_id;
+    });
+    if(bd) {
+        console.log(`Business details found for businessId: ${business_id}`);
+
+        let business_reviews: Review[] = [];
+        reviews.forEach( (review) => {
+            if (review.businessId == business_id) {
+                business_reviews.push(review);
+            }
+        });
+
+        let business_photos: Photo[] = [];
+        photos.forEach( (photo) => {
+            if(photo.businessId == business_id) {
+                business_photos.push(photo);
+            }
+        });
+
+        const details_response = {
+            "business": bd,
+            "photos": business_photos,
+            "reviews": business_reviews
+        }
+        
+        res.status(200);
+        res.json(details_response);
+    }
+    else {
+        res.status(400);
+        res.json({
+            "status": "error",
+            "message": "invalid businessId"
+        });
+    }
 });
 
 const getBusinessesPath = `${baseApiPath}/businesses`;
 app.get(getBusinessesPath, (req: Request, res: Response) => {
-    res.statusCode = 200;
-    res.json(businesses);
+    if(req.query.ownerId) {
+        let owned_businesses: Business[] = [];
+        const owner_id: number = parseInt(String(req.query.ownerId!));
+        businesses.forEach( (business) => {
+            if (business.ownerId == owner_id) {
+                owned_businesses.push(business);
+            }
+        });
+        res.status(200);
+        res.json({
+            "status": "success",
+            "ownerId": req.query['ownerId'],
+            "businesses": owned_businesses
+        })
+    } else {
+        res.status(200);
+        res.json({
+            "status": "success",
+            "businesses": businesses
+        });
+    }
+
     
 });
 
@@ -145,13 +220,17 @@ app.post(addReviewPath, (req: Request, res: Response) => {
     if(isValidReview(nr)) {
         reviews.push(nr);
         res.statusCode = 200;
-        res.json({"status": "success",
-        "review": nr});
+        res.json({
+            "status": "success",
+            "review": nr
+        });
     }
     else {
         res.status(400);
-        res.json({"status": "error",
-        "message": "invalid body"});
+        res.json({
+            "status": "error",
+            "message": "invalid body"
+        });
     }
 });
 
@@ -241,6 +320,8 @@ app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
 //     res.status(200);
 //     res.send(`GET ${userPhotosPath} received`);
 // });
+
+// https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}, or 172.31.47.53:${port} remotely`);
