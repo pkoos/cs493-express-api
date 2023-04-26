@@ -3,6 +3,7 @@ import bodyParser from 'body-parser';
 import { Business, isValidBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
+import { error } from 'console';
 
 const app: Express = express();
 const port = 3000;
@@ -57,11 +58,11 @@ const modifyBusinessPath = (`${baseApiPath}/business/modify`);
 app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
 
     const business_id:number = parseInt(req.params.id);
-    let mb = businesses.find((business) => {
+    let business_to_modify = businesses.find((business) => {
         return business.id == business_id;
     });
 
-    if(!mb) { // the business is not in the system
+    if(!business_to_modify) { // the business is not in the system
         errorResponse(res, 400, "Business not found.");
         return;
     }
@@ -74,24 +75,24 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     
 
 
-    if(mb.ownerId != owner_id) { // someone other than the owner attempting to modify a business
+    if(business_to_modify.ownerId != owner_id) { // someone other than the owner attempting to modify a business
         errorResponse(res, 400, "Cannot modify a business you do not own.");
         return;
     }
 
     const modified_business: Business = {
-        id: mb.id,
-        ownerId: mb.ownerId,
-        name: req.body['name'] ? req.body['name'] : mb.name,
-        address: req.body['address'] ? req.body['address'] : mb.address,
-        city: req.body['city'] ? req.body['city'] : mb.city,
-        state: req.body['state'] ? req.body['state'] : mb.state,
-        zip: req.body['zip'] ? req.body['zip'] : mb.zip,
-        phone: req.body['phone'] ? req.body['phone'] : mb.phone,
-        category: req.body['category'] ? req.body['category'] : mb.category,
-        subcategory: req.body['subcategory'] ? req.body['subcategory'] : mb.subcategory,
-        website: req.body['website'] ? req.body['website'] : mb.website,
-        email: req.body['email'] ? req.body['email'] : mb.email
+        id: business_to_modify.id,
+        ownerId: business_to_modify.ownerId,
+        name: req.body['name'] ? req.body['name'] : business_to_modify.name,
+        address: req.body['address'] ? req.body['address'] : business_to_modify.address,
+        city: req.body['city'] ? req.body['city'] : business_to_modify.city,
+        state: req.body['state'] ? req.body['state'] : business_to_modify.state,
+        zip: req.body['zip'] ? req.body['zip'] : business_to_modify.zip,
+        phone: req.body['phone'] ? req.body['phone'] : business_to_modify.phone,
+        category: req.body['category'] ? req.body['category'] : business_to_modify.category,
+        subcategory: req.body['subcategory'] ? req.body['subcategory'] : business_to_modify.subcategory,
+        website: req.body['website'] ? req.body['website'] : business_to_modify.website,
+        email: req.body['email'] ? req.body['email'] : business_to_modify.email
     };
 
     if(!isValidBusiness(modified_business)) {
@@ -99,48 +100,48 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
         return;
     }
 
-    mb = modified_business;
+    business_to_modify = modified_business;
 
     res.status(200);
     res.json({
         "status": "success",
-        "business": mb
+        "business": business_to_modify
     });
 });
 
 const removeBusinessPath = `${baseApiPath}/business/remove`;
 app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
+    
     const business_id:number = parseInt(req.params.id);
-    const request_owner_id: number = req.body["ownerId"];
+    const rb = businesses.find( (business) => {
+        return business.id == business_id;
+    })
+    
+    if(!rb) {
+        errorResponse(res, 400, "Business not found.");
+        return;
+    }
 
-    if (request_owner_id != undefined) {
-        const rb = businesses.find((bus) => {
-            return bus.id == business_id;
-        });
-        if(rb && request_owner_id == rb.ownerId) {
-            const index: number = businesses.findIndex(bus => bus.id == rb.id);
-            businesses.splice(index, 1);
-        } else {
-            res.status(400);
-            res.json({
-                "status": "error",
-                "message": "Unauthorized to remove a business you do not own."
-            });
-        }
-        res.status(200);
-        res.json({
-            "status": "success",
-            "message": "removed business",
-            "business": rb
-        });
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
+        errorResponse(res, 400, "Invalid request body.");
+        return;
     }
-    else {
-        res.status(400);
-        res.json({
-            "status": "error",
-            "message": "Invalid request body."
-        });
+    
+    if(owner_id != rb.ownerId) {
+        errorResponse(res, 400, "Unauthorized to remove a business you do not own.");
+        return;
     }
+
+    const index: number = businesses.findIndex(bus => bus.id == rb.id);
+    businesses.splice(index, 1);
+
+    res.status(200);
+    res.json({
+        "status": "success",
+        "message": "removed business",
+        "business": rb
+    });
 });
 
 const businessDetailsPath = `${baseApiPath}/business`
