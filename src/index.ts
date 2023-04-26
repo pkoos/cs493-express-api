@@ -3,7 +3,6 @@ import bodyParser from 'body-parser';
 import { Business, isValidBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
-import { error } from 'console';
 
 const app: Express = express();
 const port = 3000;
@@ -127,7 +126,7 @@ app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
         errorResponse(res, 400, "Invalid request body.");
         return;
     }
-    
+
     if(owner_id != rb.ownerId) {
         errorResponse(res, 400, "Unauthorized to remove a business you do not own.");
         return;
@@ -146,44 +145,39 @@ app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
 
 const businessDetailsPath = `${baseApiPath}/business`
 app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
-    console.log("Attempting to get business details");
+    
     const business_id:number = parseInt(req.params.id);
     const bd = businesses.find((bus) => {
         return bus.id == business_id;
     });
-    if(bd) {
-        console.log(`Business details found for businessId: ${business_id}`);
 
-        let business_reviews: Review[] = [];
-        reviews.forEach( (review) => {
-            if (review.businessId == business_id) {
-                business_reviews.push(review);
-            }
-        });
+    if(!bd) {
+        errorResponse(res, 400, "Business Not Found.");
+        return;
+    }
 
-        let business_photos: Photo[] = [];
-        photos.forEach( (photo) => {
-            if(photo.businessId == business_id) {
-                business_photos.push(photo);
-            }
-        });
-
-        const details_response = {
-            "business": bd,
-            "photos": business_photos,
-            "reviews": business_reviews
+    let business_reviews: Review[] = [];
+    reviews.forEach( (review) => {
+        if (review.businessId == business_id) {
+            business_reviews.push(review);
         }
-        
-        res.status(200);
-        res.json(details_response);
+    });
+
+    let business_photos: Photo[] = [];
+    photos.forEach( (photo) => {
+        if(photo.businessId == business_id) {
+            business_photos.push(photo);
+        }
+    });
+
+    const details_response = {
+        "business": bd,
+        "photos": business_photos,
+        "reviews": business_reviews
     }
-    else {
-        res.status(400);
-        res.json({
-            "status": "error",
-            "message": "invalid businessId"
-        });
-    }
+    
+    res.status(200);
+    res.json(details_response);
 });
 
 const getBusinessesPath = `${baseApiPath}/businesses`;
@@ -202,21 +196,20 @@ app.get(getBusinessesPath, (req: Request, res: Response) => {
             "ownerId": req.query['ownerId'],
             "businesses": owned_businesses
         })
-    } else {
-        res.status(200);
-        res.json({
-            "status": "success",
-            "businesses": businesses
-        });
+        return;
     }
 
-    
+    res.status(200);
+    res.json({
+        "status": "success",
+        "businesses": businesses
+    });
 });
 
 const addReviewPath = `${baseApiPath}/review/add`;
 app.post(addReviewPath, (req: Request, res: Response) => {
-    console.log("adding a review!");
-    const nr: Review = {
+
+    const new_review: Review = {
         id: ++reviewId,
         businessId: req.body['businessId'],
         ownerId: req.body['ownerId'],
@@ -225,28 +218,31 @@ app.post(addReviewPath, (req: Request, res: Response) => {
         reviewText: req.body['reviewText']
     };
 
-    if(isValidReview(nr)) {
-        reviews.push(nr);
-        res.status(200);
-        res.json({
-            "status": "success",
-            "review": nr
-        });
+    const existing_review = reviews.find( (review) => {
+        review.ownerId == new_review.ownerId;
+    })
+
+    if(existing_review) {
+        errorResponse(res, 400, "A user can only leave one review per businesss.");
+        return;
     }
-    else {
-        res.status(400);
-        res.json({
-            "status": "error",
-            "message": "invalid body"
-        });
+
+    if(!isValidReview(new_review)) {
+        errorResponse(res, 400, "Invalid request body.");
+        return;
     }
+
+    reviews.push(new_review);
+    res.status(200);
+    res.json({
+        "status": "success",
+        "review": new_review
+    });
 });
 
 const modifyReviewPath = `${baseApiPath}/review/modify`;
 app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     
-    const review_id:number = parseInt(req.params.id);
-
     const owner_id = req.body['ownerId'];
     if(!owner_id) { // there is no ownerId in the request body
         res.status(400);
@@ -257,48 +253,42 @@ app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
         return;
     }
 
-    let mr = reviews.find( (review) => {
+    const review_id:number = parseInt(req.params.id);
+    let review_to_modify = reviews.find( (review) => {
         return review.id == review_id;
     })
 
-    if (mr) {
-        if (mr.ownerId == owner_id) {
-            const modified_review:Review = {
-                id: mr.id,
-                businessId: req.body['businessId'] ? req.body['businessId'] : mr.businessId,
-                ownerId: mr.ownerId,
-                stars: req.body['stars'] ? req.body['stars'] : mr.stars,
-                dollars: req.body['dollars'] ? req.body['dollars'] : mr.dollars,
-                reviewText: req.body['reviewText'] ? req.body['reviewText'] : mr.reviewText
-            }
-            if(isValidReview(modified_review)) {
-                mr = modified_review;
-                res.status(200);
-                res.json({
-                    "status": "success",
-                    "review": mr
-                });
-            } else {
-                res.status(400);
-                res.json({
-                    "status": "error",
-                    "message": "Modified review is not valid."
-                })
-            }
-        } else {
-            res.status(400);
-            res.json({
-                "status": "error",
-                "message": "Cannot modify a review you did not write."
-            });
-        }
-    } else {
-        res.status(400);
-        res.json({
-            "status": "error",
-            "message": "Review not found"
-        });
+    if(!review_to_modify) {
+        errorResponse(res, 400, "Review not found.");
+        return;
     }
+
+    if(review_to_modify.ownerId != owner_id) {
+        errorResponse(res, 400, "Cannot modify a review you did not write.");
+        return;
+    }
+
+    const modified_review:Review = {
+        id: review_to_modify.id,
+        businessId: req.body['businessId'] ? req.body['businessId'] : review_to_modify.businessId,
+        ownerId: review_to_modify.ownerId,
+        stars: req.body['stars'] ? req.body['stars'] : review_to_modify.stars,
+        dollars: req.body['dollars'] ? req.body['dollars'] : review_to_modify.dollars,
+        reviewText: req.body['reviewText'] ? req.body['reviewText'] : review_to_modify.reviewText
+    }
+    
+    if(!isValidReview(modified_review)) {
+        errorResponse(res, 400, "Modified review is not valid");
+        return;
+    }
+
+    review_to_modify = modified_review;
+    res.status(200);
+    res.json({
+        "status": "success",
+        "review": review_to_modify
+    });
+
 });
 
 const removeReviewPath = `${baseApiPath}/review/remove`; 
@@ -307,11 +297,7 @@ app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
     const request_owner_id: number = req.body['ownerId'];
 
     if(!request_owner_id) {
-        res.status(400);
-        res.json({
-            "status": "error",
-            "message": "Invalid request body."
-        });
+        errorResponse(res, 400, "Invalid request body.");
         return;
     }
 });
