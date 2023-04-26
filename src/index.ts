@@ -25,7 +25,7 @@ const addBusinessPath = `${baseApiPath}/business/add`;
 app.post(addBusinessPath, (req: Request, res: Response) => {
     console.log(`Attempting to add a business: ${JSON.stringify(req.body)}`);
     
-    const nb: Business = {
+    const new_business: Business = {
         id: ++businessId,
         ownerId: req.body["ownerId"],
         name: req.body["name"],
@@ -39,73 +39,79 @@ app.post(addBusinessPath, (req: Request, res: Response) => {
         website: req.body["website"],
         email: req.body["email"]
     };
-    if(isValidBusiness(nb)) {
-        businesses.push(nb);
-        res.statusCode = 200;
-        res.json({
-            "status": "success",
-            "business": nb
-        });
+
+    if(!isValidBusiness(new_business)) { // either invalid values in request body, or missing fields from request body
+        errorResponse(res, 400, "Invalid body");
+        return;
     }
-    else {
-        res.status(400);
-        res.json({
-            "status": "error",
-            "message": "invalid body"
-        });
-    }
+    
+    businesses.push(new_business);
+    res.status(200)
+    res.json({
+        "status": "success",
+        "business": new_business
+    });
 });
 
 const modifyBusinessPath = (`${baseApiPath}/business/modify`);
 app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
+
     const business_id:number = parseInt(req.params.id);
-    let mb = businesses.find((bus) => {
-        return bus.id == business_id;
+    let mb = businesses.find((business) => {
+        return business.id == business_id;
     });
+
+    if(!mb) { // the business is not in the system
+        errorResponse(res, 400, "Business not found.");
+        return;
+    }
+
     const owner_id = req.body['ownerId'];
-
-    if (mb) { // the business exists
-        if (mb.ownerId == owner_id) { // the ownerId matches the business
-            console.log(`Owner matches business owner.`);
-            
-            mb.name = req.body['name'] ? req.body['name'] : mb.name;
-            mb.address = req.body['address'] ? req.body['address'] : mb.address;
-            mb.city = req.body['city'] ? req.body['city'] : mb.city;
-            mb.state = req.body['state'] ? req.body['state'] : mb.state;
-            mb.zip = req.body['zip'] ? req.body['zip'] : mb.zip;
-            mb.phone = req.body['phone'] ? req.body['phone'] : mb.phone;
-            mb.category = req.body['category'] ? req.body['category'] : mb.category;
-            mb.subcategory = req.body['subcategory'] ? req.body['subcategory'] : mb.subcategory;
-            mb.website = req.body['website'] ? req.body['website'] : mb.website;
-            mb.email = req.body['email'] ? req.body['email'] : mb.email;
-            res.status(200);
-            res.json({
-                "status": "success",
-                "business": mb
-            });
-        }
-        else { // requester does not own the business
-            res.status(400);
-            res.json({
-                "status": "error",
-                "message": "Cannot modify a business you do not own."
-            });
-        }
+    if(!owner_id) { // ownerId was not in the request body
+        errorResponse(res, 400, "Invalid request body.");
+        return;
     }
-    else {
-        res.status(404)
-        res.json({
-            "status": "error",
-            "message": "business not found"
-        });
+    
+
+
+    if(mb.ownerId != owner_id) { // someone other than the owner attempting to modify a business
+        errorResponse(res, 400, "Cannot modify a business you do not own.");
+        return;
     }
 
+    const modified_business: Business = {
+        id: mb.id,
+        ownerId: mb.ownerId,
+        name: req.body['name'] ? req.body['name'] : mb.name,
+        address: req.body['address'] ? req.body['address'] : mb.address,
+        city: req.body['city'] ? req.body['city'] : mb.city,
+        state: req.body['state'] ? req.body['state'] : mb.state,
+        zip: req.body['zip'] ? req.body['zip'] : mb.zip,
+        phone: req.body['phone'] ? req.body['phone'] : mb.phone,
+        category: req.body['category'] ? req.body['category'] : mb.category,
+        subcategory: req.body['subcategory'] ? req.body['subcategory'] : mb.subcategory,
+        website: req.body['website'] ? req.body['website'] : mb.website,
+        email: req.body['email'] ? req.body['email'] : mb.email
+    };
+
+    if(!isValidBusiness(modified_business)) {
+        errorResponse(res, 400, "Modified business is not valid.");
+        return;
+    }
+
+    mb = modified_business;
+
+    res.status(200);
+    res.json({
+        "status": "success",
+        "business": mb
+    });
 });
 
 const removeBusinessPath = `${baseApiPath}/business/remove`;
 app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
     const business_id:number = parseInt(req.params.id);
-    const request_owner_id = req.body["ownerId"];
+    const request_owner_id: number = req.body["ownerId"];
 
     if (request_owner_id != undefined) {
         const rb = businesses.find((bus) => {
@@ -212,6 +218,7 @@ app.post(addReviewPath, (req: Request, res: Response) => {
     const nr: Review = {
         id: ++reviewId,
         businessId: req.body['businessId'],
+        ownerId: req.body['ownerId'],
         stars: req.body['stars'],
         dollars: req.body['dollars'],
         reviewText: req.body['reviewText']
@@ -219,7 +226,7 @@ app.post(addReviewPath, (req: Request, res: Response) => {
 
     if(isValidReview(nr)) {
         reviews.push(nr);
-        res.statusCode = 200;
+        res.status(200);
         res.json({
             "status": "success",
             "review": nr
@@ -236,14 +243,76 @@ app.post(addReviewPath, (req: Request, res: Response) => {
 
 const modifyReviewPath = `${baseApiPath}/review/modify`;
 app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
-    res.status(200);
-    res.send(`GET ${modifyReviewPath} received`);
+    
+    const review_id:number = parseInt(req.params.id);
+
+    const owner_id = req.body['ownerId'];
+    if(!owner_id) { // there is no ownerId in the request body
+        res.status(400);
+        res.json({
+            "status": "error",
+            "message": "Invalid request body"
+        });
+        return;
+    }
+
+    let mr = reviews.find( (review) => {
+        return review.id == review_id;
+    })
+
+    if (mr) {
+        if (mr.ownerId == owner_id) {
+            const modified_review:Review = {
+                id: mr.id,
+                businessId: req.body['businessId'] ? req.body['businessId'] : mr.businessId,
+                ownerId: mr.ownerId,
+                stars: req.body['stars'] ? req.body['stars'] : mr.stars,
+                dollars: req.body['dollars'] ? req.body['dollars'] : mr.dollars,
+                reviewText: req.body['reviewText'] ? req.body['reviewText'] : mr.reviewText
+            }
+            if(isValidReview(modified_review)) {
+                mr = modified_review;
+                res.status(200);
+                res.json({
+                    "status": "success",
+                    "review": mr
+                });
+            } else {
+                res.status(400);
+                res.json({
+                    "status": "error",
+                    "message": "Modified review is not valid."
+                })
+            }
+        } else {
+            res.status(400);
+            res.json({
+                "status": "error",
+                "message": "Cannot modify a review you did not write."
+            });
+        }
+    } else {
+        res.status(400);
+        res.json({
+            "status": "error",
+            "message": "Review not found"
+        });
+    }
 });
 
 const removeReviewPath = `${baseApiPath}/review/remove`; 
 app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
-    res.status(200);
-    res.send(`POST ${removeReviewPath} received`);
+    const business_id: number = parseInt(req.params.id);
+    const request_owner_id: number = req.body['ownerId'];
+
+    if(!request_owner_id) {
+        res.status(400);
+        res.json({
+            "status": "error",
+            "message": "Invalid request body."
+        });
+        return;
+    }
 });
 
 const addPhotoPath = `${baseApiPath}/photo/add`
@@ -322,6 +391,14 @@ app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
 // });
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
+
+function errorResponse(res: Response, statusCode: number, message: string): void {
+    res.status(statusCode);
+    res.json({
+        "status": "error",
+        "message": message
+    })
+}
 
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}, or 172.31.47.53:${port} remotely`);
