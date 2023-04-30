@@ -5,7 +5,7 @@ import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
 
 const app: Express = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 let businesses: Business[] = [];
 let businessId: number = 0;
@@ -439,5 +439,5 @@ function successResponse(res: Response, successDetails: Object) {
 }
 
 app.listen(port, () => {
-    console.log(`⚡️[server]: Server is running at http://localhost:${port}, or 172.31.47.53:${port} remotely`);
+    console.log(`⚡️[server]: Server is running at http://localhost:${port}.`);
 });

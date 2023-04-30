@@ -18,5 +18,15 @@ The base path for all API calls is `/api/v1`.
 * `/photo/modify/:id`
 * `/photos/:id`
 
-#### Business
+### Docker commands
 
+To build the project's container, run the following command:
+
+```
+docker build -t busi-rate .
+```
+
+Once the container is built, you can run it with the following command:
+```
+docker run -d --name busirate-image -p 8000:8000 busi-rate
+```
