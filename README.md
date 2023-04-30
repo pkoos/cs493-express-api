@@ -121,7 +121,7 @@ Success:
 curl --location 'localhost:8000/api/v1/businesses'
 ```
 
-### `/businesses/:id`
+### `/businesses?ownerId=:id`
 
 Success:
 ```
@@ -341,33 +341,29 @@ curl --location 'localhost:8000/api/v1/photo/modify/1' \
 }'
 ```
 
-### `/photos/:id`
+### `/photos`
 
-Invalid Request Body: 
+Missing ownerId query: 
+```
+curl --location 'localhost:8000/api/v1/photos'
 ```
 
+Success:
+```
+curl --location 'localhost:8000/api/v1/photos?ownerId=1'
 ```
 
-Review Not Found:
+### `/reviews`
+
+Missing ownerId query:
+```
+curl --location 'localhost:8000/api/v1/reviews'
 ```
 
+Success:
 ```
-
-OwnerId does not match review Ownerid
+curl --location 'localhost:8000/api/v1/reviews?ownerId=1'
 ```
-
-```
-
-Invalid Modification
-```
-
-```
-
-Success
-```
-
-```
-
 
 ### Docker commands
 
