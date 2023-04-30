@@ -67,8 +67,6 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
         return;
     }
     
-
-
     if(business_to_modify.ownerId != owner_id) { // someone other than the owner attempting to modify a business
         errorNoModify(res, "Business");
         return;
@@ -164,7 +162,7 @@ const getBusinessesPath = `${baseApiPath}/businesses`;
 app.get(getBusinessesPath, (req: Request, res: Response) => {
     if(req.query.ownerId) {
         let owned_businesses: Business[] = [];
-        const owner_id: number = parseInt(String(req.query.ownerId!));
+        const owner_id: number = parseInt(String(req.query.ownerId));
         businesses.forEach( (business) => {
             if (business.ownerId == owner_id) {
                 owned_businesses.push(business);
@@ -363,6 +361,22 @@ app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
         "status": "success",
         "photo": photo_to_modify
     });
+});
+
+const getphotosPath = `${baseApiPath}/photos`;
+app.get(getphotosPath, (req: Request, res: Response) => {
+    if (req.query.ownerId) {
+        let owned_photos: Photo[] = [];
+        const owner_id: number = parseInt(String(req.query.ownerId));
+        photos.forEach( (photo) => {
+            if(photo.userId == owner_id) {
+                owned_photos.push(photo);
+            }
+        });
+
+        successResponse(res, {"ownerId": req.query.ownerId, "photos": owned_photos});
+        return;
+    }
 });
 
 // const addUserPath = `${baseApiPath}/user/add`;
