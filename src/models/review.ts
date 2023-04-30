@@ -22,7 +22,6 @@ export class Review {
 }
 
 export function isValidReview(review: Review): boolean {
-    console.log(`isValidReview: id: ${review.id}, stars: ${review.stars}, dollars: ${review.dollars}, review: ${review.reviewText}`)
     const valid: boolean = 
         review.id != undefined && review.id != -1 && 
         review.businessId != undefined && review.businessId != -1 &&

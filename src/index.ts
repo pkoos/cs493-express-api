@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, application } from 'express';
+import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import { Business, isValidBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
@@ -41,41 +41,36 @@ app.post(addBusinessPath, (req: Request, res: Response) => {
     };
 
     if(!isValidBusiness(new_business)) { // either invalid values in request body, or missing fields from request body
-        errorResponse(res, 400, "Invalid body");
+        errorInvalidBody(res);
         return;
     }
     
     businesses.push(new_business);
-    res.status(200)
-    res.json({
-        "status": "success",
-        "business": new_business
-    });
+
+    successResponse(res, {"business": new_business});
 });
 
 const modifyBusinessPath = (`${baseApiPath}/business/modify`);
 app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
 
     const business_id:number = parseInt(req.params.id);
-    let business_to_modify = businesses.find((business) => {
-        return business.id == business_id;
-    });
+    let business_to_modify = businesses.find( (business) => business.id == business_id);
 
     if(!business_to_modify) { // the business is not in the system
-        errorResponse(res, 400, "Business not found.");
+        errorNotFound(res, "Business");
         return;
     }
 
     const owner_id = req.body['ownerId'];
     if(!owner_id) { // ownerId was not in the request body
-        errorResponse(res, 400, "Invalid request body.");
+        errorInvalidBody(res);
         return;
     }
     
 
 
     if(business_to_modify.ownerId != owner_id) { // someone other than the owner attempting to modify a business
-        errorResponse(res, 400, "Cannot modify a business you do not own.");
+        errorNoModify(res, "Business");
         return;
     }
 
@@ -95,64 +90,51 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     };
 
     if(!isValidBusiness(modified_business)) {
-        errorResponse(res, 400, "Modified business is not valid.");
+        errorInvalidModification(res, "Business");
         return;
     }
 
     business_to_modify = modified_business;
 
-    res.status(200);
-    res.json({
-        "status": "success",
-        "business": business_to_modify
-    });
+    successResponse(res, {"business": business_to_modify})
 });
 
 const removeBusinessPath = `${baseApiPath}/business/remove`;
 app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
     
     const business_id:number = parseInt(req.params.id);
-    const rb = businesses.find( (business) => {
-        return business.id == business_id;
-    })
+    const rb = businesses.find( (business) => business.id == business_id );
     
     if(!rb) {
-        errorResponse(res, 400, "Business not found.");
+        errorNotFound(res, "Business");
         return;
     }
 
     const owner_id: number = req.body["ownerId"];
     if(!owner_id) {
-        errorResponse(res, 400, "Invalid request body.");
+        errorInvalidBody(res);
         return;
     }
 
     if(owner_id != rb.ownerId) {
-        errorResponse(res, 400, "Unauthorized to remove a business you do not own.");
+        errorNoRemove(res, "Business");
         return;
     }
 
     const index: number = businesses.findIndex(bus => bus.id == rb.id);
     businesses.splice(index, 1);
 
-    res.status(200);
-    res.json({
-        "status": "success",
-        "message": "removed business",
-        "business": rb
-    });
+    successResponse(res, {"message": "Removed Business", "business": rb})
 });
 
 const businessDetailsPath = `${baseApiPath}/business`
 app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
     
     const business_id:number = parseInt(req.params.id);
-    const bd = businesses.find((bus) => {
-        return bus.id == business_id;
-    });
+    const bd = businesses.find((bus) => bus.id == business_id );
 
     if(!bd) {
-        errorResponse(res, 400, "Business Not Found.");
+        errorNotFound(res, "Business");
         return;
     }
 
@@ -175,9 +157,7 @@ app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
         "photos": business_photos,
         "reviews": business_reviews
     }
-    
-    res.status(200);
-    res.json(details_response);
+    successResponse(res, details_response);
 });
 
 const getBusinessesPath = `${baseApiPath}/businesses`;
@@ -190,20 +170,12 @@ app.get(getBusinessesPath, (req: Request, res: Response) => {
                 owned_businesses.push(business);
             }
         });
-        res.status(200);
-        res.json({
-            "status": "success",
-            "ownerId": req.query['ownerId'],
-            "businesses": owned_businesses
-        })
+
+        successResponse(res, {"ownerId": req.query['ownerId'], "businesses": owned_businesses})
         return;
     }
 
-    res.status(200);
-    res.json({
-        "status": "success",
-        "businesses": businesses
-    });
+    successResponse(res, {"businesses": businesses});
 });
 
 const addReviewPath = `${baseApiPath}/review/add`;
@@ -218,26 +190,21 @@ app.post(addReviewPath, (req: Request, res: Response) => {
         reviewText: req.body['reviewText']
     };
 
-    const existing_review = reviews.find( (review) => {
-        review.ownerId == new_review.ownerId;
-    })
+    const existing_review = reviews.find( (review) => review.ownerId == new_review.ownerId && review.businessId == new_review.businessId );
 
-    if(existing_review) {
-        errorResponse(res, 400, "A user can only leave one review per businesss.");
+    if(existing_review) { // one review per user per business
+        genericErrorResponse(res, 403, "A user can only leave one Review per Business.");
         return;
     }
 
     if(!isValidReview(new_review)) {
-        errorResponse(res, 400, "Invalid request body.");
+        errorInvalidBody(res);
         return;
     }
 
     reviews.push(new_review);
-    res.status(200);
-    res.json({
-        "status": "success",
-        "review": new_review
-    });
+
+    successResponse(res, {"review": new_review})
 });
 
 const modifyReviewPath = `${baseApiPath}/review/modify`;
@@ -245,26 +212,20 @@ app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     
     const owner_id = req.body['ownerId'];
     if(!owner_id) { // there is no ownerId in the request body
-        res.status(400);
-        res.json({
-            "status": "error",
-            "message": "Invalid request body"
-        });
+        errorInvalidBody(res);
         return;
     }
 
     const review_id:number = parseInt(req.params.id);
-    let review_to_modify = reviews.find( (review) => {
-        return review.id == review_id;
-    })
+    let review_to_modify = reviews.find((review) => review.id == review_id);
 
     if(!review_to_modify) {
-        errorResponse(res, 400, "Review not found.");
+        errorNotFound(res, "Review");
         return;
     }
 
     if(review_to_modify.ownerId != owner_id) {
-        errorResponse(res, 400, "Cannot modify a review you did not write.");
+        errorNoModify(res, "Review");
         return;
     }
 
@@ -278,34 +239,45 @@ app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     }
     
     if(!isValidReview(modified_review)) {
-        errorResponse(res, 400, "Modified review is not valid");
+        errorInvalidModification(res, "Review");
         return;
     }
 
     review_to_modify = modified_review;
-    res.status(200);
-    res.json({
-        "status": "success",
-        "review": review_to_modify
-    });
-
+    
+    successResponse(res, {"review": review_to_modify});
 });
 
 const removeReviewPath = `${baseApiPath}/review/remove`; 
 app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
-    const business_id: number = parseInt(req.params.id);
-    const request_owner_id: number = req.body['ownerId'];
+    
+    const review_id: number = parseInt(req.params.id);
+    const review_to_remove = reviews.find((review) => review.id == review_id);
 
-    if(!request_owner_id) {
-        errorResponse(res, 400, "Invalid request body.");
+    if(!review_to_remove) {
+        errorNotFound(res, "Review");
         return;
     }
+
+    const owner_id: number = req.body['ownerId'];
+    if(!owner_id) {
+        errorInvalidBody(res);
+        return;
+    }
+
+    if(owner_id != review_to_remove.ownerId) {
+        errorNoRemove(res, "Review");
+        return;
+    }
+
+    const index: number = businesses.findIndex(review => review.id == review_to_remove.id);
+    reviews.splice(index, 1);
+
+    successResponse(res, {"message": "Review removed.", "review": review_to_remove});
 });
 
 const addPhotoPath = `${baseApiPath}/photo/add`
 app.post(addPhotoPath, (req: Request, res: Response) => {
-    console.log("adding a photo!");
-    console.log(JSON.stringify(req.body));
     const new_photo: Photo = {
         id: ++photoId,
         userId: req.body['userId'],
@@ -314,33 +286,83 @@ app.post(addPhotoPath, (req: Request, res: Response) => {
         caption: req.body['caption']
     };
 
-    if(isValidPhoto(new_photo)) {
-        photos.push(new_photo);
-        res.statusCode = 200;
-        res.json({
-            "status": "success",
-            "photo": new_photo
-        });
+    if(!isValidPhoto(new_photo)) {
+        errorInvalidBody(res);
+        return;
     }
-    else {
-        res.status(400);
-        res.json({
-            "status": "error",
-            "message": "invalid body"
-        });
-    }
+
+    photos.push(new_photo);
+
+    successResponse(res, {"photo": new_photo})
 });
 
 const removePhotoPath = `${baseApiPath}/photo/remove`;
 app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => {
-    res.status(200);
-    res.send(`POST ${removePhotoPath} received`);
+    
+    const photo_id: number = parseInt(req.params.id);
+    const photo_to_remove = photos.find((photo) => photo.id == photo_id);
+
+    if(!photo_to_remove) {
+        errorNotFound(res, "Photo");
+        return;
+    }
+
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
+        errorInvalidBody(res);
+        return;
+    }
+
+    if(owner_id != photo_to_remove.userId) {
+        errorNoRemove(res, "Photo");
+        return;
+    }
+
+    const index: number = photos.findIndex(photo => photo.id == photo_to_remove.id);
+    photos.splice(index, 1);
+
+    successResponse(res, {"message": "Photo removed.", "photo": photo_to_remove})
 });
 
-const modifyPhotoPath = `${baseApiPath}/photo/modify/:id`;
+const modifyPhotoPath = `${baseApiPath}/photo/modify`;
 app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
+        errorInvalidBody(res);
+        return;
+    }
+
+    const photo_id: number = parseInt(req.params.id);
+    let photo_to_modify = photos.find( (photo) => photo.id == photo_id);
+    if(!photo_to_modify) {
+        errorNotFound(res, "Photo");
+        return;
+    }
+
+    if(photo_to_modify.userId != owner_id) {
+        errorNoModify(res, "Photo");
+        return;
+    }
+
+    const modified_photo: Photo = {
+        id: photo_to_modify.id, 
+        businessId: photo_to_modify.businessId,
+        userId: photo_to_modify.userId,
+        fileName: photo_to_modify.fileName,
+        caption: req.body["caption"] ? req.body["caption"] : photo_to_modify.caption
+    }
+
+    if(!isValidPhoto(modified_photo)) {
+        errorInvalidModification(res, "Photo");
+        return;
+    }
+
+    photo_to_modify = modified_photo;
     res.status(200);
-    res.send(`POST ${modifyPhotoPath} received`);
+    res.json({
+        "status": "success",
+        "photo": photo_to_modify
+    });
 });
 
 // const addUserPath = `${baseApiPath}/user/add`;
@@ -379,12 +401,41 @@ app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
-function errorResponse(res: Response, statusCode: number, message: string): void {
-    res.status(statusCode);
-    res.json({
+function genericErrorResponse(res: Response, statusCode: number, message: string): void {
+    res.status(statusCode).json({
         "status": "error",
         "message": message
-    })
+    });
+}
+
+function errorNotFound(res: Response, type:string) {
+    genericErrorResponse(res, 404, `${type} not found.`);
+}
+
+function errorNoModify(res: Response, type: string) {
+    genericErrorResponse(res, 401, `Cannot modify a ${type} you did not create.`);
+}
+
+function errorNoRemove(res: Response, type: string) {
+    genericErrorResponse(res, 401, `Cannot remove a ${type} you did not create.`);
+}
+
+function errorInvalidBody(res: Response) {
+    genericErrorResponse(res, 406, "Invalid request body.");
+}
+
+function errorInvalidModification(res: Response, type: string) {
+    genericErrorResponse(res, 403, `Modified ${type} is not valid.`);
+}
+
+function successResponse(res: Response, successDetails: Object) {
+    const success_json = {
+        "status": "success"
+    };
+
+    Object.assign(success_json, successDetails);
+    
+    res.status(200).json(success_json);
 }
 
 app.listen(port, () => {
