@@ -377,6 +377,10 @@ app.get(getphotosPath, (req: Request, res: Response) => {
         successResponse(res, {"ownerId": req.query.ownerId, "photos": owned_photos});
         return;
     }
+    
+    genericErrorResponse(res, 400, "Missing ownerId query");
+
+
 });
 
 // const addUserPath = `${baseApiPath}/user/add`;
