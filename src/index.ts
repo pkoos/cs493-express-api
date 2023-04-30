@@ -21,7 +21,7 @@ app.use(bodyParser.json());
 
 const baseApiPath: string = "/api/v1";
 
-const addBusinessPath = `${baseApiPath}/business/add`;
+const addBusinessPath:string = `${baseApiPath}/business/add`;
 app.post(addBusinessPath, (req: Request, res: Response) => {
     console.log(`Attempting to add a business: ${JSON.stringify(req.body)}`);
     
@@ -50,7 +50,7 @@ app.post(addBusinessPath, (req: Request, res: Response) => {
     successResponse(res, {"business": new_business});
 });
 
-const modifyBusinessPath = (`${baseApiPath}/business/modify`);
+const modifyBusinessPath:string = (`${baseApiPath}/business/modify`);
 app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
 
     const business_id:number = parseInt(req.params.id);
@@ -97,7 +97,7 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     successResponse(res, {"business": business_to_modify})
 });
 
-const removeBusinessPath = `${baseApiPath}/business/remove`;
+const removeBusinessPath:string = `${baseApiPath}/business/remove`;
 app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
     
     const business_id:number = parseInt(req.params.id);
@@ -125,7 +125,7 @@ app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
     successResponse(res, {"message": "Removed Business", "business": rb})
 });
 
-const businessDetailsPath = `${baseApiPath}/business`
+const businessDetailsPath:string = `${baseApiPath}/business`
 app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
     
     const business_id:number = parseInt(req.params.id);
@@ -158,7 +158,7 @@ app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
     successResponse(res, details_response);
 });
 
-const getBusinessesPath = `${baseApiPath}/businesses`;
+const getBusinessesPath:string = `${baseApiPath}/businesses`;
 app.get(getBusinessesPath, (req: Request, res: Response) => {
     if(req.query.ownerId) {
         let owned_businesses: Business[] = [];
@@ -176,7 +176,7 @@ app.get(getBusinessesPath, (req: Request, res: Response) => {
     successResponse(res, {"businesses": businesses});
 });
 
-const addReviewPath = `${baseApiPath}/review/add`;
+const addReviewPath:string = `${baseApiPath}/review/add`;
 app.post(addReviewPath, (req: Request, res: Response) => {
 
     const new_review: Review = {
@@ -205,7 +205,7 @@ app.post(addReviewPath, (req: Request, res: Response) => {
     successResponse(res, {"review": new_review})
 });
 
-const modifyReviewPath = `${baseApiPath}/review/modify`;
+const modifyReviewPath:string = `${baseApiPath}/review/modify`;
 app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     
     const owner_id = req.body['ownerId'];
@@ -246,7 +246,7 @@ app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     successResponse(res, {"review": review_to_modify});
 });
 
-const removeReviewPath = `${baseApiPath}/review/remove`; 
+const removeReviewPath:string = `${baseApiPath}/review/remove`; 
 app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
     
     const review_id: number = parseInt(req.params.id);
@@ -274,7 +274,7 @@ app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
     successResponse(res, {"message": "Review removed.", "review": review_to_remove});
 });
 
-const addPhotoPath = `${baseApiPath}/photo/add`
+const addPhotoPath:string = `${baseApiPath}/photo/add`
 app.post(addPhotoPath, (req: Request, res: Response) => {
     const new_photo: Photo = {
         id: ++photoId,
@@ -294,7 +294,7 @@ app.post(addPhotoPath, (req: Request, res: Response) => {
     successResponse(res, {"photo": new_photo})
 });
 
-const removePhotoPath = `${baseApiPath}/photo/remove`;
+const removePhotoPath:string = `${baseApiPath}/photo/remove`;
 app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => {
     
     const photo_id: number = parseInt(req.params.id);
@@ -322,7 +322,7 @@ app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => {
     successResponse(res, {"message": "Photo removed.", "photo": photo_to_remove})
 });
 
-const modifyPhotoPath = `${baseApiPath}/photo/modify`;
+const modifyPhotoPath:string = `${baseApiPath}/photo/modify`;
 app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
     const owner_id: number = req.body["ownerId"];
     if(!owner_id) {
@@ -363,7 +363,7 @@ app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
     });
 });
 
-const getphotosPath = `${baseApiPath}/photos`;
+const getphotosPath:string = `${baseApiPath}/photos`;
 app.get(getphotosPath, (req: Request, res: Response) => {
     if (req.query.ownerId) {
         let owned_photos: Photo[] = [];
@@ -379,8 +379,24 @@ app.get(getphotosPath, (req: Request, res: Response) => {
     }
     
     genericErrorResponse(res, 400, "Missing ownerId query");
+});
 
+const getReviewsPath: string = `${baseApiPath}/reviews`;
+app.get(getReviewsPath, (req: Request, res: Response) => {
+    if(req.query.ownerId) {
+        let owned_reviews: Review[] = [];
+        const owner_id:number = parseInt(String(req.query.ownerId));
+        reviews.forEach( (review) => {
+            if(review.ownerId == owner_id) {
+                owned_reviews.push(review);
+            }
+        });
 
+        successResponse(res, {"ownerId": req.query.ownerId, "reviews": owned_reviews});
+        return;
+    }
+
+    genericErrorResponse(res, 400, "Missing ownerId query");
 });
 
 // const addUserPath = `${baseApiPath}/user/add`;
