@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
-import { Business, isValidBusiness, generateBusinessesList } from './models/business';
+import { Business, isValidBusiness, generateBusinessesList, addNewBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
 import * as rh from './controllers/responses-helper';
@@ -32,33 +32,8 @@ app.use(bodyParser.json());
 const baseApiPath: string = "/api/v1";
 
 const addBusinessPath:string = `${baseApiPath}/business/add`;
-app.post(addBusinessPath, (req: Request, res: Response) => {
-    console.log(`Attempting to add a business: ${JSON.stringify(req.body)}`);
-    
-    const new_business: Business = {
-        id: ++businessId,
-        ownerId: req.body["ownerId"],
-        name: req.body["name"],
-        address: req.body["address"],
-        city: req.body["city"],
-        state: req.body["state"],
-        zip: req.body["zip"],
-        phone: req.body["phone"],
-        category: req.body["category"],
-        subcategory: req.body["subcategory"],
-        website: req.body["website"],
-        email: req.body["email"]
-    };
+app.post(addBusinessPath, (req: Request, res: Response) => addNewBusiness(db, req, res));
 
-    if(!isValidBusiness(new_business)) { // either invalid values in request body, or missing fields from request body
-        rh.errorInvalidBody(res);
-        return;
-    }
-    
-    businesses.push(new_business);
-
-    rh.successResponse(res, {"business": new_business});
-});
 const modifyBusinessPath:string = (`${baseApiPath}/business/modify`);
 app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
 
