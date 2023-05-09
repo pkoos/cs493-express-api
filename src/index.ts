@@ -1,11 +1,21 @@
 import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
-import { Business, isValidBusiness } from './models/business';
+import mysql2, { Pool } from 'mysql2/promise';
+import { Business, isValidBusiness, generateBusinessesList } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
+import * as rh from './controllers/responses-helper';
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
+const db:Pool = mysql2.createPool({
+    connectionLimit: 10,
+    user: "busi-user",
+    password: "asdfqwer1234",
+    database: "busirate",
+    host: "localhost",
+    port: 3306
+});
 
 let businesses: Business[] = [];
 let businessId: number = 0;
@@ -41,15 +51,14 @@ app.post(addBusinessPath, (req: Request, res: Response) => {
     };
 
     if(!isValidBusiness(new_business)) { // either invalid values in request body, or missing fields from request body
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
     
     businesses.push(new_business);
 
-    successResponse(res, {"business": new_business});
+    rh.successResponse(res, {"business": new_business});
 });
-
 const modifyBusinessPath:string = (`${baseApiPath}/business/modify`);
 app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
 
@@ -57,18 +66,18 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     let business_to_modify = businesses.find( (business) => business.id == business_id);
 
     if(!business_to_modify) { // the business is not in the system
-        errorNotFound(res, "Business");
+        rh.errorNotFound(res, "Business");
         return;
     }
 
     const owner_id = req.body['ownerId'];
     if(!owner_id) { // ownerId was not in the request body
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
     
     if(business_to_modify.ownerId != owner_id) { // someone other than the owner attempting to modify a business
-        errorNoModify(res, "Business");
+        rh.errorNoModify(res, "Business");
         return;
     }
 
@@ -88,13 +97,13 @@ app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
     };
 
     if(!isValidBusiness(modified_business)) {
-        errorInvalidModification(res, "Business");
+        rh.errorInvalidModification(res, "Business");
         return;
     }
 
     business_to_modify = modified_business;
 
-    successResponse(res, {"business": business_to_modify})
+    rh.successResponse(res, {"business": business_to_modify})
 });
 
 const removeBusinessPath:string = `${baseApiPath}/business/remove`;
@@ -104,25 +113,25 @@ app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
     const rb = businesses.find( (business) => business.id == business_id );
     
     if(!rb) {
-        errorNotFound(res, "Business");
+        rh.errorNotFound(res, "Business");
         return;
     }
 
     const owner_id: number = req.body["ownerId"];
     if(!owner_id) {
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
 
     if(owner_id != rb.ownerId) {
-        errorNoRemove(res, "Business");
+        rh.errorNoRemove(res, "Business");
         return;
     }
 
     const index: number = businesses.findIndex(bus => bus.id == rb.id);
     businesses.splice(index, 1);
 
-    successResponse(res, {"message": "Removed Business", "business": rb})
+    rh.successResponse(res, {"message": "Removed Business", "business": rb})
 });
 
 const businessDetailsPath:string = `${baseApiPath}/business`
@@ -132,7 +141,7 @@ app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
     const bd = businesses.find((bus) => bus.id == business_id );
 
     if(!bd) {
-        errorNotFound(res, "Business");
+        rh.errorNotFound(res, "Business");
         return;
     }
 
@@ -155,26 +164,12 @@ app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
         "photos": business_photos,
         "reviews": business_reviews
     }
-    successResponse(res, details_response);
+    rh.successResponse(res, details_response);
 });
 
 const getBusinessesPath:string = `${baseApiPath}/businesses`;
-app.get(getBusinessesPath, (req: Request, res: Response) => {
-    if(req.query.ownerId) {
-        let owned_businesses: Business[] = [];
-        const owner_id: number = parseInt(String(req.query.ownerId));
-        businesses.forEach( (business) => {
-            if (business.ownerId == owner_id) {
-                owned_businesses.push(business);
-            }
-        });
+app.get(getBusinessesPath, async (req: Request, res: Response) => generateBusinessesList(db, req, res));
 
-        successResponse(res, {"ownerId": req.query['ownerId'], "businesses": owned_businesses})
-        return;
-    }
-
-    successResponse(res, {"businesses": businesses});
-});
 
 const addReviewPath:string = `${baseApiPath}/review/add`;
 app.post(addReviewPath, (req: Request, res: Response) => {
@@ -191,18 +186,18 @@ app.post(addReviewPath, (req: Request, res: Response) => {
     const existing_review = reviews.find( (review) => review.ownerId == new_review.ownerId && review.businessId == new_review.businessId );
 
     if(existing_review) { // one review per user per business
-        genericErrorResponse(res, 403, "A user can only leave one Review per Business.");
+        rh.genericErrorResponse(res, 403, "A user can only leave one Review per Business.");
         return;
     }
 
     if(!isValidReview(new_review)) {
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
 
     reviews.push(new_review);
 
-    successResponse(res, {"review": new_review})
+    rh.successResponse(res, {"review": new_review})
 });
 
 const modifyReviewPath:string = `${baseApiPath}/review/modify`;
@@ -210,7 +205,7 @@ app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     
     const owner_id = req.body['ownerId'];
     if(!owner_id) { // there is no ownerId in the request body
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
 
@@ -218,12 +213,12 @@ app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     let review_to_modify = reviews.find((review) => review.id == review_id);
 
     if(!review_to_modify) {
-        errorNotFound(res, "Review");
+        rh.errorNotFound(res, "Review");
         return;
     }
 
     if(review_to_modify.ownerId != owner_id) {
-        errorNoModify(res, "Review");
+        rh.errorNoModify(res, "Review");
         return;
     }
 
@@ -237,13 +232,13 @@ app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
     }
     
     if(!isValidReview(modified_review)) {
-        errorInvalidModification(res, "Review");
+        rh.errorInvalidModification(res, "Review");
         return;
     }
 
     review_to_modify = modified_review;
     
-    successResponse(res, {"review": review_to_modify});
+    rh.successResponse(res, {"review": review_to_modify});
 });
 
 const removeReviewPath:string = `${baseApiPath}/review/remove`; 
@@ -253,25 +248,25 @@ app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
     const review_to_remove = reviews.find((review) => review.id == review_id);
 
     if(!review_to_remove) {
-        errorNotFound(res, "Review");
+        rh.errorNotFound(res, "Review");
         return;
     }
 
     const owner_id: number = req.body['ownerId'];
     if(!owner_id) {
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
 
     if(owner_id != review_to_remove.ownerId) {
-        errorNoRemove(res, "Review");
+        rh.errorNoRemove(res, "Review");
         return;
     }
 
     const index: number = businesses.findIndex(review => review.id == review_to_remove.id);
     reviews.splice(index, 1);
 
-    successResponse(res, {"message": "Review removed.", "review": review_to_remove});
+    rh.successResponse(res, {"message": "Review removed.", "review": review_to_remove});
 });
 
 const addPhotoPath:string = `${baseApiPath}/photo/add`
@@ -285,13 +280,13 @@ app.post(addPhotoPath, (req: Request, res: Response) => {
     };
 
     if(!isValidPhoto(new_photo)) {
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
 
     photos.push(new_photo);
 
-    successResponse(res, {"photo": new_photo})
+    rh.successResponse(res, {"photo": new_photo})
 });
 
 const removePhotoPath:string = `${baseApiPath}/photo/remove`;
@@ -301,44 +296,44 @@ app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => {
     const photo_to_remove = photos.find((photo) => photo.id == photo_id);
 
     if(!photo_to_remove) {
-        errorNotFound(res, "Photo");
+        rh.errorNotFound(res, "Photo");
         return;
     }
 
     const owner_id: number = req.body["ownerId"];
     if(!owner_id) {
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
 
     if(owner_id != photo_to_remove.userId) {
-        errorNoRemove(res, "Photo");
+        rh.errorNoRemove(res, "Photo");
         return;
     }
 
     const index: number = photos.findIndex(photo => photo.id == photo_to_remove.id);
     photos.splice(index, 1);
 
-    successResponse(res, {"message": "Photo removed.", "photo": photo_to_remove})
+    rh.successResponse(res, {"message": "Photo removed.", "photo": photo_to_remove})
 });
 
 const modifyPhotoPath:string = `${baseApiPath}/photo/modify`;
 app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
     const owner_id: number = req.body["ownerId"];
     if(!owner_id) {
-        errorInvalidBody(res);
+        rh.errorInvalidBody(res);
         return;
     }
 
     const photo_id: number = parseInt(req.params.id);
     let photo_to_modify = photos.find( (photo) => photo.id == photo_id);
     if(!photo_to_modify) {
-        errorNotFound(res, "Photo");
+        rh.errorNotFound(res, "Photo");
         return;
     }
 
     if(photo_to_modify.userId != owner_id) {
-        errorNoModify(res, "Photo");
+        rh.errorNoModify(res, "Photo");
         return;
     }
 
@@ -351,7 +346,7 @@ app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
     }
 
     if(!isValidPhoto(modified_photo)) {
-        errorInvalidModification(res, "Photo");
+        rh.errorInvalidModification(res, "Photo");
         return;
     }
 
@@ -374,11 +369,11 @@ app.get(getphotosPath, (req: Request, res: Response) => {
             }
         });
 
-        successResponse(res, {"ownerId": req.query.ownerId, "photos": owned_photos});
+        rh.successResponse(res, {"ownerId": req.query.ownerId, "photos": owned_photos});
         return;
     }
     
-    genericErrorResponse(res, 400, "Missing ownerId query");
+    rh.genericErrorResponse(res, 400, "Missing ownerId query");
 });
 
 const getReviewsPath: string = `${baseApiPath}/reviews`;
@@ -392,11 +387,11 @@ app.get(getReviewsPath, (req: Request, res: Response) => {
             }
         });
 
-        successResponse(res, {"ownerId": req.query.ownerId, "reviews": owned_reviews});
+        rh.successResponse(res, {"ownerId": req.query.ownerId, "reviews": owned_reviews});
         return;
     }
 
-    genericErrorResponse(res, 400, "Missing ownerId query");
+    rh.genericErrorResponse(res, 400, "Missing ownerId query");
 });
 
 // const addUserPath = `${baseApiPath}/user/add`;
@@ -434,43 +429,6 @@ app.get(getReviewsPath, (req: Request, res: Response) => {
 // });
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
-
-function genericErrorResponse(res: Response, statusCode: number, message: string): void {
-    res.status(statusCode).json({
-        "status": "error",
-        "message": message
-    });
-}
-
-function errorNotFound(res: Response, type:string) {
-    genericErrorResponse(res, 404, `${type} not found.`);
-}
-
-function errorNoModify(res: Response, type: string) {
-    genericErrorResponse(res, 401, `Cannot modify a ${type} you did not create.`);
-}
-
-function errorNoRemove(res: Response, type: string) {
-    genericErrorResponse(res, 401, `Cannot remove a ${type} you did not create.`);
-}
-
-function errorInvalidBody(res: Response) {
-    genericErrorResponse(res, 406, "Invalid request body.");
-}
-
-function errorInvalidModification(res: Response, type: string) {
-    genericErrorResponse(res, 403, `Modified ${type} is not valid.`);
-}
-
-function successResponse(res: Response, successDetails: Object) {
-    const success_json = {
-        "status": "success"
-    };
-
-    Object.assign(success_json, successDetails);
-    
-    res.status(200).json(success_json);
-}
 
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}.`);
