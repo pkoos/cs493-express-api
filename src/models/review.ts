@@ -9,7 +9,7 @@ export class Review {
     ownerId: number = -1;
     stars: number = -1;
     dollars: number = -1;
-    reviewText: string = "";
+    text: string = "";
 
     public constructor(init?: Partial<Review>) {
         Object.assign(this, init);
@@ -23,15 +23,15 @@ export async function addNewReview(db: Pool, req: Request, res: Response) {
         businessId: req.body["businessId"],
         stars: req.body["stars"],
         dollars: req.body["dollars"],
-        reviewText: req.body["reviewText"]
+        text: req.body["text"]
     };
 
     if(!isValidReview(new_review)) { // either invalid values in request body, or missing fields from request body
         rh.errorInvalidBody(res);
         return;
     }
-    const queryString:string = `INSERT INTO business (owner_id, name, address, city, state, zip, phone, category, subcategory, website, email) 
-                                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const queryString:string = `INSERT INTO review (owner_id, business_id, stars, dollars, text) 
+                                VALUES(?, ?, ?, ?, ?)`;
     const params:any[] = newReviewQueryParams(new_review);
     const db_results = await db.query(queryString, params);
     const new_id = (db_results[0] as ResultSetHeader).insertId;
@@ -66,7 +66,7 @@ export async function modifyReview(db: Pool, req: Request, res: Response) {
         ownerId: found_review.ownerId,
         stars: req.body['stars'] ?? found_review.stars,
         dollars: req.body['dollars'] ?? found_review.dollars,
-        reviewText: req.body['reviewText'] ?? found_review.reviewText
+        text: req.body['text'] ?? found_review.text
     };
 
     if(!isValidReview(modified_review)) {
@@ -124,11 +124,11 @@ export function reviewFromDb(row: OkPacket): Review {
     const rowMap: Map<string, string> = new Map(Object.entries(row));
     const new_review: Review = {
         id: parseInt((rowMap.get('id')) as string),
-        businessId: parseInt(String(rowMap.get('id'))),
+        businessId: parseInt(String(rowMap.get('business_id'))),
         ownerId: parseInt(String(rowMap.get('owner_id'))),
         stars: parseInt(String(rowMap.get('stars'))),
         dollars: parseInt(String(rowMap.get('dollars'))),
-        reviewText: String(rowMap.get('id')),
+        text: String(rowMap.get('text')),
     };
     return new_review;
 }
@@ -144,11 +144,11 @@ export function isValidReview(review: Review): boolean {
 }
 
 export function newReviewQueryParams(review: Review): any[] {
-    return [ review.businessId, review.ownerId, review.stars, review.dollars, review.reviewText ];
+    return [ review.businessId, review.ownerId, review.stars, review.dollars, review.text ];
 }
 
 export function modifyReviewQueryParams(review: Review): any[] {
     return [
-        review.businessId, review.stars, review.dollars, review.reviewText, review.id
+        review.businessId, review.stars, review.dollars, review.text, review.id
     ];
 }
