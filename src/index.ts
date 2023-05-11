@@ -2,8 +2,8 @@ import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
 import { Business, getBusinesses, addNewBusiness, modifyBusiness, removeBusiness } from './models/business';
-import { Review, addNewReview, isValidReview, modifyReview, removeReview } from './models/review';
-import { Photo, addPhoto, isValidPhoto, modifyPhoto, removePhoto } from './models/photo';
+import { Review, addNewReview, modifyReview, removeReview } from './models/review';
+import { Photo, addPhoto, modifyPhoto, removePhoto } from './models/photo';
 import * as rh from './controllers/responses-helper';
 
 const app: Express = express();
