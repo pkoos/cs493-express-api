@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
-import { Business, isValidBusiness, generateBusinessesList, addNewBusiness } from './models/business';
+import { Business, getBusinesses, addNewBusiness, modifyBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
 import * as rh from './controllers/responses-helper';
@@ -18,7 +18,7 @@ const db:Pool = mysql2.createPool({
 });
 
 let businesses: Business[] = [];
-let businessId: number = 0;
+// let businessId: number = 0;
 let reviews: Review[] = [];
 let reviewId: number = 0;
 let photos: Photo[] = [];
@@ -35,51 +35,7 @@ const addBusinessPath:string = `${baseApiPath}/business/add`;
 app.post(addBusinessPath, (req: Request, res: Response) => addNewBusiness(db, req, res));
 
 const modifyBusinessPath:string = (`${baseApiPath}/business/modify`);
-app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => {
-
-    const business_id:number = parseInt(req.params.id);
-    let business_to_modify = businesses.find( (business) => business.id == business_id);
-
-    if(!business_to_modify) { // the business is not in the system
-        rh.errorNotFound(res, "Business");
-        return;
-    }
-
-    const owner_id = req.body['ownerId'];
-    if(!owner_id) { // ownerId was not in the request body
-        rh.errorInvalidBody(res);
-        return;
-    }
-    
-    if(business_to_modify.ownerId != owner_id) { // someone other than the owner attempting to modify a business
-        rh.errorNoModify(res, "Business");
-        return;
-    }
-
-    const modified_business: Business = {
-        id: business_to_modify.id,
-        ownerId: business_to_modify.ownerId,
-        name: req.body['name'] ? req.body['name'] : business_to_modify.name,
-        address: req.body['address'] ? req.body['address'] : business_to_modify.address,
-        city: req.body['city'] ? req.body['city'] : business_to_modify.city,
-        state: req.body['state'] ? req.body['state'] : business_to_modify.state,
-        zip: req.body['zip'] ? req.body['zip'] : business_to_modify.zip,
-        phone: req.body['phone'] ? req.body['phone'] : business_to_modify.phone,
-        category: req.body['category'] ? req.body['category'] : business_to_modify.category,
-        subcategory: req.body['subcategory'] ? req.body['subcategory'] : business_to_modify.subcategory,
-        website: req.body['website'] ? req.body['website'] : business_to_modify.website,
-        email: req.body['email'] ? req.body['email'] : business_to_modify.email
-    };
-
-    if(!isValidBusiness(modified_business)) {
-        rh.errorInvalidModification(res, "Business");
-        return;
-    }
-
-    business_to_modify = modified_business;
-
-    rh.successResponse(res, {"business": business_to_modify})
-});
+app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => modifyBusiness(db, req, res));
 
 const removeBusinessPath:string = `${baseApiPath}/business/remove`;
 app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
@@ -143,7 +99,7 @@ app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
 });
 
 const getBusinessesPath:string = `${baseApiPath}/businesses`;
-app.get(getBusinessesPath, async (req: Request, res: Response) => generateBusinessesList(db, req, res));
+app.get(getBusinessesPath, async (req: Request, res: Response) => getBusinesses(db, req, res));
 
 
 const addReviewPath:string = `${baseApiPath}/review/add`;
