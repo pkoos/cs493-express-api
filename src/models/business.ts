@@ -93,11 +93,6 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    if(!isValidBusiness(modified_business)) {
-        rh.errorInvalidModification(res, "Business");
-        return;
-    }
-
     const modifyQueryString: string = "UPDATE business SET name=?, address=?, city=?, state=?, zip=?, phone=?, category=?, subcategory=?, website=?, email=? WHERE id=?";
     const modifyParams: any[] = modifyBusinessQueryParams(modified_business);
     await db.query(modifyQueryString, modifyParams);

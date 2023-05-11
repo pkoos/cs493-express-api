@@ -2,7 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
 import { Business, getBusinesses, addNewBusiness, modifyBusiness, removeBusiness } from './models/business';
-import { Review, isValidReview } from './models/review';
+import { Review, addNewReview, isValidReview, modifyReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
 import * as rh from './controllers/responses-helper';
 
@@ -77,74 +77,76 @@ app.get(getBusinessesPath, async (req: Request, res: Response) => getBusinesses(
 
 
 const addReviewPath:string = `${baseApiPath}/review/add`;
-app.post(addReviewPath, (req: Request, res: Response) => {
+app.post(addReviewPath, (req: Request, res: Response) => addNewReview(db, req, res));
+// {
 
-    const new_review: Review = {
-        id: ++reviewId,
-        businessId: req.body['businessId'],
-        ownerId: req.body['ownerId'],
-        stars: req.body['stars'],
-        dollars: req.body['dollars'],
-        reviewText: req.body['reviewText']
-    };
+//     const new_review: Review = {
+//         id: ++reviewId,
+//         businessId: req.body['businessId'],
+//         ownerId: req.body['ownerId'],
+//         stars: req.body['stars'],
+//         dollars: req.body['dollars'],
+//         reviewText: req.body['reviewText']
+//     };
 
-    const existing_review = reviews.find( (review) => review.ownerId == new_review.ownerId && review.businessId == new_review.businessId );
+//     const existing_review = reviews.find( (review) => review.ownerId == new_review.ownerId && review.businessId == new_review.businessId );
 
-    if(existing_review) { // one review per user per business
-        rh.genericErrorResponse(res, 403, "A user can only leave one Review per Business.");
-        return;
-    }
+//     if(existing_review) { // one review per user per business
+//         rh.genericErrorResponse(res, 403, "A user can only leave one Review per Business.");
+//         return;
+//     }
 
-    if(!isValidReview(new_review)) {
-        rh.errorInvalidBody(res);
-        return;
-    }
+//     if(!isValidReview(new_review)) {
+//         rh.errorInvalidBody(res);
+//         return;
+//     }
 
-    reviews.push(new_review);
+//     reviews.push(new_review);
 
-    rh.successResponse(res, {"review": new_review})
-});
+//     rh.successResponse(res, {"review": new_review})
+// });
 
 const modifyReviewPath:string = `${baseApiPath}/review/modify`;
-app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => {
+app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => modifyReview(db, req, res));
+// {
     
-    const owner_id = req.body['ownerId'];
-    if(!owner_id) { // there is no ownerId in the request body
-        rh.errorInvalidBody(res);
-        return;
-    }
+//     const owner_id = req.body['ownerId'];
+//     if(!owner_id) { // there is no ownerId in the request body
+//         rh.errorInvalidBody(res);
+//         return;
+//     }
 
-    const review_id:number = parseInt(req.params.id);
-    let review_to_modify = reviews.find((review) => review.id == review_id);
+//     const review_id:number = parseInt(req.params.id);
+//     let review_to_modify = reviews.find((review) => review.id == review_id);
 
-    if(!review_to_modify) {
-        rh.errorNotFound(res, "Review");
-        return;
-    }
+//     if(!review_to_modify) {
+//         rh.errorNotFound(res, "Review");
+//         return;
+//     }
 
-    if(review_to_modify.ownerId != owner_id) {
-        rh.errorNoModify(res, "Review");
-        return;
-    }
+//     if(review_to_modify.ownerId != owner_id) {
+//         rh.errorNoModify(res, "Review");
+//         return;
+//     }
 
-    const modified_review:Review = {
-        id: review_to_modify.id,
-        businessId: req.body['businessId'] ? req.body['businessId'] : review_to_modify.businessId,
-        ownerId: review_to_modify.ownerId,
-        stars: req.body['stars'] ? req.body['stars'] : review_to_modify.stars,
-        dollars: req.body['dollars'] ? req.body['dollars'] : review_to_modify.dollars,
-        reviewText: req.body['reviewText'] ? req.body['reviewText'] : review_to_modify.reviewText
-    }
+//     const modified_review:Review = {
+//         id: review_to_modify.id,
+//         businessId: req.body['businessId'] ? req.body['businessId'] : review_to_modify.businessId,
+//         ownerId: review_to_modify.ownerId,
+//         stars: req.body['stars'] ? req.body['stars'] : review_to_modify.stars,
+//         dollars: req.body['dollars'] ? req.body['dollars'] : review_to_modify.dollars,
+//         reviewText: req.body['reviewText'] ? req.body['reviewText'] : review_to_modify.reviewText
+//     }
     
-    if(!isValidReview(modified_review)) {
-        rh.errorInvalidModification(res, "Review");
-        return;
-    }
+//     if(!isValidReview(modified_review)) {
+//         rh.errorInvalidModification(res, "Review");
+//         return;
+//     }
 
-    review_to_modify = modified_review;
+//     review_to_modify = modified_review;
     
-    rh.successResponse(res, {"review": review_to_modify});
-});
+//     rh.successResponse(res, {"review": review_to_modify});
+// });
 
 const removeReviewPath:string = `${baseApiPath}/review/remove`; 
 app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => {
