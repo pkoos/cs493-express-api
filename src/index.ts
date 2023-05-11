@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
-import { Business, getBusinesses, addNewBusiness, modifyBusiness } from './models/business';
+import { Business, getBusinesses, addNewBusiness, modifyBusiness, removeBusiness } from './models/business';
 import { Review, isValidReview } from './models/review';
 import { Photo, isValidPhoto } from './models/photo';
 import * as rh from './controllers/responses-helper';
@@ -18,7 +18,6 @@ const db:Pool = mysql2.createPool({
 });
 
 let businesses: Business[] = [];
-// let businessId: number = 0;
 let reviews: Review[] = [];
 let reviewId: number = 0;
 let photos: Photo[] = [];
@@ -38,32 +37,7 @@ const modifyBusinessPath:string = (`${baseApiPath}/business/modify`);
 app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => modifyBusiness(db, req, res));
 
 const removeBusinessPath:string = `${baseApiPath}/business/remove`;
-app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => {
-    
-    const business_id:number = parseInt(req.params.id);
-    const rb = businesses.find( (business) => business.id == business_id );
-    
-    if(!rb) {
-        rh.errorNotFound(res, "Business");
-        return;
-    }
-
-    const owner_id: number = req.body["ownerId"];
-    if(!owner_id) {
-        rh.errorInvalidBody(res);
-        return;
-    }
-
-    if(owner_id != rb.ownerId) {
-        rh.errorNoRemove(res, "Business");
-        return;
-    }
-
-    const index: number = businesses.findIndex(bus => bus.id == rb.id);
-    businesses.splice(index, 1);
-
-    rh.successResponse(res, {"message": "Removed Business", "business": rb})
-});
+app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => removeBusiness(db, req, res));
 
 const businessDetailsPath:string = `${baseApiPath}/business`
 app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {

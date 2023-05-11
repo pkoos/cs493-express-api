@@ -2,21 +2,6 @@ import { Request, Response } from 'express';
 import { OkPacket, Pool, ResultSetHeader } from 'mysql2/promise';
 import * as rh from '../controllers/responses-helper';
 
-// export interface BusinessInterface {
-//     id: number;
-//     ownerId: number;
-//     name: string;
-//     address: string;
-//     city: string;
-//     state: string;
-//     zip: string;
-//     phone: string;
-//     category: string;
-//     subcategory: string;
-//     website: string;
-//     email: string;
-// }
-
 export class Business {
 
     id: number = 0;
@@ -71,7 +56,6 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
     const found_business: Business = businessFromDb((results as OkPacket[])[0]);
-    console.log(found_business);
     if(!found_business) {
         rh.errorNotFound(res, "Business");
         return;
@@ -88,7 +72,7 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
         return;
     }
 
-        const modified_business: Business = {
+    const modified_business: Business = {
         id: found_business.id,
         ownerId: found_business.ownerId,
         name: req.body['name'] ? req.body['name'] : found_business.name,
@@ -118,6 +102,35 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
     await db.query(modifyQueryString, modifyParams);
 
     rh.successResponse(res, {"business": modified_business});
+}
+
+export async function removeBusiness(db: Pool, req: Request, res: Response) {
+    const queryString:string = "SELECT * FROM business WHERE id=?";
+    const params: any[] = [parseInt(req.params.id)];
+    const [results] = await db.query(queryString, params);
+    const found_business: Business = businessFromDb((results as OkPacket[])[0]);
+
+    if(!found_business) {
+        rh.errorNotFound(res, "Business");
+        return;
+    }
+
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
+        rh.errorInvalidBody(res);
+        return;
+    }
+
+    if(owner_id != found_business.ownerId) {
+        rh.errorNoRemove(res, "Business");
+        return;
+    }
+
+    const deleteQueryString:string = "DELETE FROM business WHERE id=?";
+    const deleteQueryParams:any[] = [found_business.id];
+
+    await db.query(deleteQueryString, deleteQueryParams);
+    rh.successResponse(res, {"message": "Removed Business", "business": found_business});
 }
 
 export async function getBusinesses(db: Pool, req: Request, res: Response) {
