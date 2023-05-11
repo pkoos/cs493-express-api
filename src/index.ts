@@ -19,9 +19,7 @@ const db:Pool = mysql2.createPool({
 
 let businesses: Business[] = [];
 let reviews: Review[] = [];
-let reviewId: number = 0;
 let photos: Photo[] = [];
-let photoId: number = 0;
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -87,95 +85,12 @@ app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => removeRevie
 
 const addPhotoPath:string = `${baseApiPath}/photo/add`
 app.post(addPhotoPath, (req: Request, res: Response) => addPhoto(db, req, res));
-// {
-//     const new_photo: Photo = {
-//         id: ++photoId,
-//         userId: req.body['userId'],
-//         businessId: req.body['businessId'],
-//         fileName: req.body['fileName'],
-//         caption: req.body['caption']
-//     };
-
-//     if(!isValidPhoto(new_photo)) {
-//         rh.errorInvalidBody(res);
-//         return;
-//     }
-
-//     photos.push(new_photo);
-
-//     rh.successResponse(res, {"photo": new_photo})
-// });
 
 const removePhotoPath:string = `${baseApiPath}/photo/remove`;
 app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => removePhoto(db, req, res));
-// {
-    
-//     const photo_id: number = parseInt(req.params.id);
-//     const photo_to_remove = photos.find((photo) => photo.id == photo_id);
-
-//     if(!photo_to_remove) {
-//         rh.errorNotFound(res, "Photo");
-//         return;
-//     }
-
-//     const owner_id: number = req.body["ownerId"];
-//     if(!owner_id) {
-//         rh.errorInvalidBody(res);
-//         return;
-//     }
-
-//     if(owner_id != photo_to_remove.userId) {
-//         rh.errorNoRemove(res, "Photo");
-//         return;
-//     }
-
-//     const index: number = photos.findIndex(photo => photo.id == photo_to_remove.id);
-//     photos.splice(index, 1);
-
-//     rh.successResponse(res, {"message": "Photo removed.", "photo": photo_to_remove})
-// });
 
 const modifyPhotoPath:string = `${baseApiPath}/photo/modify`;
 app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => modifyPhoto(db, req, res));
-// {
-//     const owner_id: number = req.body["ownerId"];
-//     if(!owner_id) {
-//         rh.errorInvalidBody(res);
-//         return;
-//     }
-
-//     const photo_id: number = parseInt(req.params.id);
-//     let photo_to_modify = photos.find( (photo) => photo.id == photo_id);
-//     if(!photo_to_modify) {
-//         rh.errorNotFound(res, "Photo");
-//         return;
-//     }
-
-//     if(photo_to_modify.userId != owner_id) {
-//         rh.errorNoModify(res, "Photo");
-//         return;
-//     }
-
-//     const modified_photo: Photo = {
-//         id: photo_to_modify.id, 
-//         businessId: photo_to_modify.businessId,
-//         userId: photo_to_modify.userId,
-//         fileName: photo_to_modify.fileName,
-//         caption: req.body["caption"] ? req.body["caption"] : photo_to_modify.caption
-//     }
-
-//     if(!isValidPhoto(modified_photo)) {
-//         rh.errorInvalidModification(res, "Photo");
-//         return;
-//     }
-
-//     photo_to_modify = modified_photo;
-//     res.status(200);
-//     res.json({
-//         "status": "success",
-//         "photo": photo_to_modify
-//     });
-// });
 
 const getphotosPath:string = `${baseApiPath}/photos`;
 app.get(getphotosPath, (req: Request, res: Response) => {
@@ -212,40 +127,6 @@ app.get(getReviewsPath, (req: Request, res: Response) => {
 
     rh.genericErrorResponse(res, 400, "Missing ownerId query");
 });
-
-// const addUserPath = `${baseApiPath}/user/add`;
-// app.post(addUserPath, (req: Request, res: Response) => {
-//     // console.log(`POST ${addUserPath} received`);
-//     // res.status(200);
-//     // const body = req.body;
-//     // res.json(req.body);
-//     // const newUser:User = new User(1, req.body["email"], req.body["password"], req.body["isBusinessOwner"]);
-//     // console.log(newUser);
-// });
-
-// const userLoginPath = `${baseApiPath}/user/login`;
-// app.post(userLoginPath, (req: Request, res: Response) => {
-//     console.log(`GET ${userLoginPath} received`);
-//     res.status(200);
-// });
-
-// const userBusinessesPath = `${baseApiPath}/user/businesses`
-// app.get(userBusinessesPath, (req: Request, res: Response) => {     res.status(200);
-//     res.status(200);
-//     res.send(`GET ${userBusinessesPath} received`);
-// });
-
-// const userReviewsPath = `${baseApiPath}/users/reviews`
-// app.get(userReviewsPath, (req: Request, res: Response) => {     res.status(200);
-//     res.status(200);
-//     res.send(`GET ${userReviewsPath} received`);
-// });
-
-// const userPhotosPath = `${baseApiPath}/users/photos`;
-// app.get(userPhotosPath, (req: Request, res: Response) => {     res.status(200);
-//     res.status(200);
-//     res.send(`GET ${userPhotosPath} received`);
-// });
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
