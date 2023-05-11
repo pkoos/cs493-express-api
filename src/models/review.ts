@@ -1,11 +1,6 @@
-export interface ReviewInterface {
-    id: number;
-    ownerId: number;
-    stars: number;
-    dollars: number;
-    reviewText: string;
-}
-
+import { Request, Response } from 'express';
+import { OkPacket, Pool } from 'mysql2/promise';
+import * as rh from '../controllers/responses-helper';
 
 export class Review {
 
@@ -16,9 +11,32 @@ export class Review {
     dollars: number = -1;
     reviewText: string = "";
 
-    public constructor(init?: Partial<ReviewInterface>) {
+    public constructor(init?: Partial<Review>) {
         Object.assign(this, init);
     }
+}
+
+export function generateListofReviews(data: OkPacket[]): Review[] {
+    const return_value: Review[] = [];
+    data.forEach( (row) => {
+        const dbr: Review = reviewFromDb(row);
+        return_value.push(dbr);
+    });
+
+    return return_value;
+}
+
+export function reviewFromDb(row: OkPacket): Review {
+    const rowMap: Map<string, string> = new Map(Object.entries(row));
+    const new_review: Review = {
+        id: parseInt((rowMap.get('id')) as string),
+        businessId: parseInt(String(rowMap.get('id'))),
+        ownerId: parseInt(String(rowMap.get('owner_id'))),
+        stars: parseInt(String(rowMap.get('stars'))),
+        dollars: parseInt(String(rowMap.get('dollars'))),
+        reviewText: String(rowMap.get('id')),
+    };
+    return new_review;
 }
 
 export function isValidReview(review: Review): boolean {

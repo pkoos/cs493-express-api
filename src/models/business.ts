@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { OkPacket, Pool, ResultSetHeader } from 'mysql2/promise';
 import * as rh from '../controllers/responses-helper';
+import { Review, generateListofReviews } from './review';
 
 export class Business {
 
@@ -142,19 +143,33 @@ export async function getBusinesses(db: Pool, req: Request, res: Response) {
     }
 
     let db_results = await db.query(queryString, params);
-    let db_businesses: Business[] = generateBusinessesList2((db_results[0] as OkPacket[]));
+    let db_businesses: Business[] = generateListOfBusinesses((db_results[0] as OkPacket[]));
 
     rh.successResponse(res, {"businesses": db_businesses});
 }
 
+export async function getBusinessDetails(db: Pool, req: Request, res: Response) {
+    const businessQueryString: string = "SELECT * FROM business WHERE id=?";
+    const params: any[] = [ parseInt(req.params.id) ];
+    const [ businessResults ] = await db.query(businessQueryString, params);
+    const found_business: Business = businessFromDb((businessResults as OkPacket[])[0]);
+    if(!found_business) {
+        rh.errorNotFound(res, "Business");
+    }
 
+    let business_reviews: Review[] = [];
+    const reviewQueryString: string = "SELECT * FROM review WHERE business_id=?";
+    const reviewParams: any[] = [ found_business.id ];
+    const reviewResults = await db.query(reviewQueryString, reviewParams);
+    const reviews: Review[] = generateListofReviews(reviewResults[0] as OkPacket[]);
+}
 
-export function generateBusinessesList2(data: OkPacket[]): Business[] {
+export function generateListOfBusinesses(data: OkPacket[]): Business[] {
     const return_value: Business[] = []
-        data.forEach( (row) => { 
-            const dbb: Business = businessFromDb(row);
-            return_value.push(dbb);
-        });
+    data.forEach( (row) => { 
+        const dbb: Business = businessFromDb(row);
+        return_value.push(dbb);
+    });
         // console.log(return_value);
     return return_value;
 }
