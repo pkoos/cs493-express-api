@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
 import { Business, getBusinesses, addNewBusiness, modifyBusiness, removeBusiness } from './models/business';
 import { Review, addNewReview, isValidReview, modifyReview, removeReview } from './models/review';
-import { Photo, isValidPhoto } from './models/photo';
+import { Photo, addPhoto, isValidPhoto, modifyPhoto, removePhoto } from './models/photo';
 import * as rh from './controllers/responses-helper';
 
 const app: Express = express();
@@ -86,93 +86,96 @@ const removeReviewPath:string = `${baseApiPath}/review/remove`;
 app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => removeReview(db, req, res));
 
 const addPhotoPath:string = `${baseApiPath}/photo/add`
-app.post(addPhotoPath, (req: Request, res: Response) => {
-    const new_photo: Photo = {
-        id: ++photoId,
-        userId: req.body['userId'],
-        businessId: req.body['businessId'],
-        fileName: req.body['fileName'],
-        caption: req.body['caption']
-    };
+app.post(addPhotoPath, (req: Request, res: Response) => addPhoto(db, req, res));
+// {
+//     const new_photo: Photo = {
+//         id: ++photoId,
+//         userId: req.body['userId'],
+//         businessId: req.body['businessId'],
+//         fileName: req.body['fileName'],
+//         caption: req.body['caption']
+//     };
 
-    if(!isValidPhoto(new_photo)) {
-        rh.errorInvalidBody(res);
-        return;
-    }
+//     if(!isValidPhoto(new_photo)) {
+//         rh.errorInvalidBody(res);
+//         return;
+//     }
 
-    photos.push(new_photo);
+//     photos.push(new_photo);
 
-    rh.successResponse(res, {"photo": new_photo})
-});
+//     rh.successResponse(res, {"photo": new_photo})
+// });
 
 const removePhotoPath:string = `${baseApiPath}/photo/remove`;
-app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => {
+app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => removePhoto(db, req, res));
+// {
     
-    const photo_id: number = parseInt(req.params.id);
-    const photo_to_remove = photos.find((photo) => photo.id == photo_id);
+//     const photo_id: number = parseInt(req.params.id);
+//     const photo_to_remove = photos.find((photo) => photo.id == photo_id);
 
-    if(!photo_to_remove) {
-        rh.errorNotFound(res, "Photo");
-        return;
-    }
+//     if(!photo_to_remove) {
+//         rh.errorNotFound(res, "Photo");
+//         return;
+//     }
 
-    const owner_id: number = req.body["ownerId"];
-    if(!owner_id) {
-        rh.errorInvalidBody(res);
-        return;
-    }
+//     const owner_id: number = req.body["ownerId"];
+//     if(!owner_id) {
+//         rh.errorInvalidBody(res);
+//         return;
+//     }
 
-    if(owner_id != photo_to_remove.userId) {
-        rh.errorNoRemove(res, "Photo");
-        return;
-    }
+//     if(owner_id != photo_to_remove.userId) {
+//         rh.errorNoRemove(res, "Photo");
+//         return;
+//     }
 
-    const index: number = photos.findIndex(photo => photo.id == photo_to_remove.id);
-    photos.splice(index, 1);
+//     const index: number = photos.findIndex(photo => photo.id == photo_to_remove.id);
+//     photos.splice(index, 1);
 
-    rh.successResponse(res, {"message": "Photo removed.", "photo": photo_to_remove})
-});
+//     rh.successResponse(res, {"message": "Photo removed.", "photo": photo_to_remove})
+// });
 
 const modifyPhotoPath:string = `${baseApiPath}/photo/modify`;
-app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => {
-    const owner_id: number = req.body["ownerId"];
-    if(!owner_id) {
-        rh.errorInvalidBody(res);
-        return;
-    }
+app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => modifyPhoto(db, req, res));
+// {
+//     const owner_id: number = req.body["ownerId"];
+//     if(!owner_id) {
+//         rh.errorInvalidBody(res);
+//         return;
+//     }
 
-    const photo_id: number = parseInt(req.params.id);
-    let photo_to_modify = photos.find( (photo) => photo.id == photo_id);
-    if(!photo_to_modify) {
-        rh.errorNotFound(res, "Photo");
-        return;
-    }
+//     const photo_id: number = parseInt(req.params.id);
+//     let photo_to_modify = photos.find( (photo) => photo.id == photo_id);
+//     if(!photo_to_modify) {
+//         rh.errorNotFound(res, "Photo");
+//         return;
+//     }
 
-    if(photo_to_modify.userId != owner_id) {
-        rh.errorNoModify(res, "Photo");
-        return;
-    }
+//     if(photo_to_modify.userId != owner_id) {
+//         rh.errorNoModify(res, "Photo");
+//         return;
+//     }
 
-    const modified_photo: Photo = {
-        id: photo_to_modify.id, 
-        businessId: photo_to_modify.businessId,
-        userId: photo_to_modify.userId,
-        fileName: photo_to_modify.fileName,
-        caption: req.body["caption"] ? req.body["caption"] : photo_to_modify.caption
-    }
+//     const modified_photo: Photo = {
+//         id: photo_to_modify.id, 
+//         businessId: photo_to_modify.businessId,
+//         userId: photo_to_modify.userId,
+//         fileName: photo_to_modify.fileName,
+//         caption: req.body["caption"] ? req.body["caption"] : photo_to_modify.caption
+//     }
 
-    if(!isValidPhoto(modified_photo)) {
-        rh.errorInvalidModification(res, "Photo");
-        return;
-    }
+//     if(!isValidPhoto(modified_photo)) {
+//         rh.errorInvalidModification(res, "Photo");
+//         return;
+//     }
 
-    photo_to_modify = modified_photo;
-    res.status(200);
-    res.json({
-        "status": "success",
-        "photo": photo_to_modify
-    });
-});
+//     photo_to_modify = modified_photo;
+//     res.status(200);
+//     res.json({
+//         "status": "success",
+//         "photo": photo_to_modify
+//     });
+// });
 
 const getphotosPath:string = `${baseApiPath}/photos`;
 app.get(getphotosPath, (req: Request, res: Response) => {
@@ -180,7 +183,7 @@ app.get(getphotosPath, (req: Request, res: Response) => {
         let owned_photos: Photo[] = [];
         const owner_id: number = parseInt(String(req.query.ownerId));
         photos.forEach( (photo) => {
-            if(photo.userId == owner_id) {
+            if(photo.ownerId == owner_id) {
                 owned_photos.push(photo);
             }
         });
