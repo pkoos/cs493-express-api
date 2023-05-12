@@ -4,7 +4,6 @@ import * as rh from '../controllers/responses-helper';
 import { Review, generateListofReviews } from './review';
 
 export class Business {
-
     id: number = 0;
     ownerId: number = 0;
     name: string = "";
@@ -146,10 +145,10 @@ export async function removeBusiness(db: Pool, req: Request, res: Response) {
 }
 
 export async function getBusinesses(db: Pool, req: Request, res: Response) {
-    const queryString:string = "SELECT * FROM business";
+    let queryString:string = "SELECT * FROM business";
     const params:any[] = [];
     if(req.query.ownerId) {
-        queryString.concat(" WHERE id=?");
+        queryString = queryString.concat(" WHERE owner_id=?");
         params.push(parseInt(String(req.query.ownerId)));
     }
 
@@ -235,6 +234,6 @@ export function businessFromDb(row: OkPacket): Business {
         website: String( rowMap.get('website')),
         email: String( rowMap.get('email')),
     }
-    console.log(`new business: ${JSON.stringify(new_business)}`);
+    // console.log(`new business: ${JSON.stringify(new_business)}`);
     return new_business;
 }
