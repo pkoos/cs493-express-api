@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { OkPacket, Pool, ResultSetHeader } from 'mysql2/promise';
 import * as rh from '../controllers/responses-helper';
 import { Review, generateListofReviews } from './review';
+import { Photo, generateListofPhotos } from './photo';
 
 export class Business {
     id: number = 0;
@@ -160,18 +161,37 @@ export async function getBusinesses(db: Pool, req: Request, res: Response) {
 
 export async function getBusinessDetails(db: Pool, req: Request, res: Response) {
     const businessQueryString: string = "SELECT * FROM business WHERE id=?";
-    const params: any[] = [ parseInt(req.params.id) ];
-    const [ businessResults ] = await db.query(businessQueryString, params);
-    const found_business: Business = businessFromDb((businessResults as OkPacket[])[0]);
-    if(!found_business) {
+    const businessParams: any[] = [ parseInt(req.params.id) ];
+    const [ businessResults ] = await db.query(businessQueryString, businessParams);
+    if((businessResults as OkPacket[]).length < 1) {
         rh.errorNotFound(res, "Business");
+        return;
     }
+
+    const found_business: Business = businessFromDb((businessResults as OkPacket[])[0]);
 
     let business_reviews: Review[] = [];
     const reviewQueryString: string = "SELECT * FROM review WHERE business_id=?";
     const reviewParams: any[] = [ found_business.id ];
-    const reviewResults = await db.query(reviewQueryString, reviewParams);
-    const reviews: Review[] = generateListofReviews(reviewResults[0] as OkPacket[]);
+    const [ reviewResults ] = await db.query(reviewQueryString, reviewParams);
+    if((reviewResults as OkPacket[]).length > 0) {
+        business_reviews = generateListofReviews(reviewResults as OkPacket[]);
+    }
+
+    let business_photos: Photo[] = [];
+    const photoQueryString: string = "SELECT * FROM photo where business_id=?";
+    const photoParams: any[] = [ found_business.id ];
+    const [ photoResults ] = await db.query(photoQueryString, photoParams);
+    if((photoResults as OkPacket[]).length > 0) {
+        business_photos = generateListofPhotos(photoResults as OkPacket[]);
+    }
+
+    const details_response = {
+        "business": found_business,
+        "photos": business_photos,
+        "reviews": business_reviews
+    }
+    rh.successResponse(res, details_response);
 }
 
 export function generateListOfBusinesses(data: OkPacket[]): Business[] {

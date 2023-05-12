@@ -136,3 +136,12 @@ export function newPhotoQueryParams(photo: Photo): any[] {
 export function modifyPhotoQueryParams(photo: Photo): any[] {
     return [ photo.caption, photo.id ];
 }
+
+export function generateListofPhotos(data: OkPacket[]): Photo[] {
+    const return_value: Photo[] = [];
+    data.forEach( (row) => {
+        const dbp: Photo = photoFromDb(row);
+        return_value.push(dbp);
+    });
+    return return_value;
+}

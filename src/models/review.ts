@@ -17,8 +17,8 @@ export class Review {
 }
 
 export async function addReview(db: Pool, req: Request, res: Response) {    
-    const prevQueryString:string = "SELECT * FROM review WHERE owner_id=?";
-    const prevParams:any[] = [ req.body['ownerId'] ];
+    const prevQueryString:string = "SELECT * FROM review WHERE owner_id=? AND business_id=?";
+    const prevParams:any[] = [ req.body['ownerId'], req.body['businessId'] ];
     const [ prevResults ] = await db.query(prevQueryString, prevParams);
     if((prevResults as OkPacket[]).length > 0) {
         rh.genericErrorResponse(res, 403, "A user can only leave one Review per Business.");

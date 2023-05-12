@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
-import { Business, getBusinesses, addNewBusiness, modifyBusiness, removeBusiness } from './models/business';
+import { Business, getBusinesses, addNewBusiness, modifyBusiness, removeBusiness, getBusinessDetails } from './models/business';
 import { Review, addReview, modifyReview, removeReview } from './models/review';
 import { Photo, addPhoto, modifyPhoto, removePhoto } from './models/photo';
 import * as rh from './controllers/responses-helper';
@@ -38,41 +38,10 @@ const removeBusinessPath:string = `${baseApiPath}/business/remove`;
 app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => removeBusiness(db, req, res));
 
 const businessDetailsPath:string = `${baseApiPath}/business`
-app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => {
-    
-    const business_id:number = parseInt(req.params.id);
-    const bd = businesses.find((bus) => bus.id == business_id );
-
-    if(!bd) {
-        rh.errorNotFound(res, "Business");
-        return;
-    }
-
-    let business_reviews: Review[] = [];
-    reviews.forEach( (review) => {
-        if (review.businessId == business_id) {
-            business_reviews.push(review);
-        }
-    });
-
-    let business_photos: Photo[] = [];
-    photos.forEach( (photo) => {
-        if(photo.businessId == business_id) {
-            business_photos.push(photo);
-        }
-    });
-
-    const details_response = {
-        "business": bd,
-        "photos": business_photos,
-        "reviews": business_reviews
-    }
-    rh.successResponse(res, details_response);
-});
+app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => getBusinessDetails(db, req, res));
 
 const getBusinessesPath:string = `${baseApiPath}/businesses`;
 app.get(getBusinessesPath, async (req: Request, res: Response) => getBusinesses(db, req, res));
-
 
 const addReviewPath:string = `${baseApiPath}/review/add`;
 app.post(addReviewPath, (req: Request, res: Response) => addReview(db, req, res));
