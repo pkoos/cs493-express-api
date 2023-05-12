@@ -56,6 +56,10 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
     const queryString:string = "SELECT * FROM business WHERE id=?";
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
+    if((results as OkPacket[]).length < 1) {
+        rh.errorNotFound(res, "Business");
+        return;
+    }
     const found_business: Business = businessFromDb((results as OkPacket[])[0]);
     if(!found_business) {
         rh.errorNotFound(res, "Business");
