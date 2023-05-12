@@ -52,6 +52,10 @@ export async function modifyReview(db: Pool, req: Request, res: Response) {
     const queryString:string = "SELECT * FROM review WHERE id=?";
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
+    if((results as OkPacket[]).length < 1) {
+        rh.errorNotFound(res, "Review");
+        return;
+    }
     const found_review: Review = reviewFromDb((results as OkPacket[])[0]);
     if(!found_review) {
         rh.errorNotFound(res, "Review");
@@ -83,7 +87,7 @@ export async function modifyReview(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    const modifyQueryString: string = "UPDATE review SET business_id=?, stars=?, dollars=?, review_text=? WHERE id=?";
+    const modifyQueryString: string = "UPDATE review SET business_id=?, stars=?, dollars=?, text=? WHERE id=?";
     const modifyParams: any[] = modifyReviewQueryParams(modified_review);
     await db.query(modifyQueryString, modifyParams);
 
@@ -158,7 +162,10 @@ export function isValidReview(review: Review): boolean {
 }
 
 export function newReviewQueryParams(review: Review): any[] {
-    return [ review.businessId, review.ownerId, review.stars, review.dollars, review.text ];
+    return [
+        review.ownerId, review.businessId, review.stars, review.dollars, 
+        review.text 
+    ];
 }
 
 export function modifyReviewQueryParams(review: Review): any[] {
