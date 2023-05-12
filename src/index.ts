@@ -2,7 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
 import { Business, getBusinesses, addNewBusiness, modifyBusiness, removeBusiness } from './models/business';
-import { Review, addNewReview, modifyReview, removeReview } from './models/review';
+import { Review, addReview, modifyReview, removeReview } from './models/review';
 import { Photo, addPhoto, modifyPhoto, removePhoto } from './models/photo';
 import * as rh from './controllers/responses-helper';
 
@@ -75,7 +75,7 @@ app.get(getBusinessesPath, async (req: Request, res: Response) => getBusinesses(
 
 
 const addReviewPath:string = `${baseApiPath}/review/add`;
-app.post(addReviewPath, (req: Request, res: Response) => addNewReview(db, req, res));
+app.post(addReviewPath, (req: Request, res: Response) => addReview(db, req, res));
 
 const modifyReviewPath:string = `${baseApiPath}/review/modify`;
 app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => modifyReview(db, req, res));
