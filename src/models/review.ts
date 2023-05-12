@@ -94,6 +94,11 @@ export async function removeReview(db: Pool, req: Request, res: Response) {
     const queryString:string = "SELECT * FROM review WHERE id=?";
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
+
+    if((results as OkPacket[]).length < 1) {
+        rh.errorNotFound(res, "Review");
+        return;
+    }
     const found_review: Review = reviewFromDb((results as OkPacket[])[0]);
 
     if(!found_review) {
