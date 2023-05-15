@@ -5,7 +5,9 @@ ENV MYSQL_DATABASE busirate
 ENV MYSQL_USER busi-user
 ENV MYSQL_PASSWORD asdfqwer1234
 
-COPY initdb.sh .
-RUN ./initdb.sh
+COPY /initdb.sh .
+# CMD ./initdb.sh
 
 EXPOSE ${PORT}
+
+# ENTRYPOINT ./initdb.sh
