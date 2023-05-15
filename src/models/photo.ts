@@ -107,6 +107,21 @@ export async function removePhoto(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"message": "Removed Photo", "photo": found_photo});
 }
 
+export async function getPhotos(db: Pool, req: Request, res: Response) {
+    const queryString:string = "SELECT * FROM photo WHERE owner_id=?";
+    const params: any[] = [];
+    if(!req.query.ownerId) {
+        rh.errorInvalidQuery(res);
+        return;
+    }
+
+    params.push(parseInt(req.query.ownerId as string));
+    let [db_results] = await db.query(queryString, params);
+    let db_photos: Photo[] = generateListofPhotos(db_results as OkPacket[]);
+
+    rh.successResponse(res, {"ownerId": req.query.ownerId, "photos": db_photos});
+}
+
 export function isValidPhoto(photo: Photo): boolean {
     const valid: boolean = 
         photo.id != undefined && photo.id != 0 && 

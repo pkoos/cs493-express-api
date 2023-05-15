@@ -7,6 +7,7 @@ ENV MYSQL_PASSWORD asdfqwer1234
 
 COPY /initdb.sh .
 # CMD ./initdb.sh
+# RUN ./initdb.sh
 
 EXPOSE ${PORT}
 

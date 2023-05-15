@@ -128,6 +128,21 @@ export async function removeReview(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"message": "Removed Review", "review": found_review});
 }
 
+export async function getReviews(db: Pool, req: Request, res: Response) {
+    const queryString:string = "SELECT * FROM review WHERE owner_id=?";
+    const params: any[] = [];
+    if(!req.query.ownerId) {
+        rh.errorInvalidQuery(res);
+        return;
+    }
+
+    params.push(parseInt(req.query.ownerId as string));
+    let [db_results] = await db.query(queryString, params);
+    let db_reviews: Review[] = generateListofReviews(db_results as OkPacket[]);
+
+    rh.successResponse(res, {"ownerId": req.query.ownerId, "reviews": db_reviews});
+}
+
 export function generateListofReviews(data: OkPacket[]): Review[] {
     const return_value: Review[] = [];
     data.forEach( (row) => {
@@ -174,7 +189,3 @@ export function modifyReviewQueryParams(review: Review): any[] {
     ];
 }
 
-export async function getReviews(db: Pool, req: Request, res: Response) {
-    let queryString: string = "SELECT * FROM review WHERE owner_id=?";
-    
-}

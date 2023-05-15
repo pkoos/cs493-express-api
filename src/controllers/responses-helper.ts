@@ -28,6 +28,10 @@ export function errorInvalidModification(res: Response, type: string) {
     genericErrorResponse(res, 403, `Modified ${type} is not valid.`);
 }
 
+export function errorInvalidQuery(res: Response) {
+    genericErrorResponse(res, 406, "ownerId missing from query string.");
+}
+
 export function successResponse(res: Response, successDetails: Object) {
     const success_json = {
         "status": "success"
