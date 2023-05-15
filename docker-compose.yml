@@ -1,0 +1,22 @@
+version: '3'
+services:
+  busyrate:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+  busyrate-mysql:
+    build:
+      context: ./
+      dockerfile: Dockerfile-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      PORT: 3306
+      MYSQL_RANDOM_ROOT_PASSWORD: yes
+      MYSQL_DATABASE: busirate
+      MYSQL_USER: busi-user
+      MYSQL_PASSWORD: asdfqwer1234

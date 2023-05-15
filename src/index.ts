@@ -17,7 +17,6 @@ const db:Pool = mysql2.createPool({
     port: 3306
 });
 
-let businesses: Business[] = [];
 let reviews: Review[] = [];
 let photos: Photo[] = [];
 

@@ -173,3 +173,8 @@ export function modifyReviewQueryParams(review: Review): any[] {
         review.businessId, review.stars, review.dollars, review.text, review.id
     ];
 }
+
+export async function getReviews(db: Pool, req: Request, res: Response) {
+    let queryString: string = "SELECT * FROM review WHERE owner_id=?";
+    
+}
