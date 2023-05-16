@@ -12,7 +12,8 @@ const db:Pool = mysql2.createPool({
     user: "busi-user",
     password: "asdfqwer1234",
     database: "busirate",
-    host: "db", // use the container name
+    host: "localhost", // use the container name
+    // host: "db", // use the container name
     port: 3306
 });
 

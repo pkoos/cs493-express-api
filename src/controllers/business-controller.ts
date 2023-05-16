@@ -6,7 +6,7 @@ import * as rh from './responses-helper';
 import { Request, Response } from 'express';
 
 export async function addNewBusiness(db: Pool, req: Request, res: Response) {    
-    const new_business: Business = {
+    const new_business: Business = new Business({
         id: -20,
         ownerId: req.body["ownerId"],
         name: req.body["name"],
@@ -19,18 +19,15 @@ export async function addNewBusiness(db: Pool, req: Request, res: Response) {
         subcategory: req.body["subcategory"],
         website: req.body["website"],
         email: req.body["email"]
-    };
+    });
 
-    if(!isValidBusiness(new_business)) { // either invalid values in request body, or missing fields from request body
+    if(!new_business.isValid()) { // either invalid values in request body, or missing fields from request body
         rh.errorInvalidBody(res);
         return;
     }
-    const queryString:string = `INSERT INTO business (owner_id, name, address, city, state, zip, phone, category, subcategory, website, email) 
-                                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const params:any[] = businessQueryParams(new_business);
-    const db_results = await db.query(queryString, params);
-    const new_id = (db_results[0] as ResultSetHeader).insertId;
-    new_business.id = new_id;
+
+    const db_results = await db.query(Business.insertString(), new_business.insertParams());
+    new_business.id = (db_results[0] as ResultSetHeader).insertId;
     rh.successResponse(res, {"business": new_business});
 }
 
@@ -42,7 +39,7 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
         rh.errorNotFound(res, "Business");
         return;
     }
-    const found_business: Business = businessFromDb((results as OkPacket[])[0]);
+    const found_business: Business = Business.fromDatabase((results as OkPacket[])[0]);
     if(!found_business) {
         rh.errorNotFound(res, "Business");
         return;
@@ -59,7 +56,7 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    const modified_business: Business = {
+    const modified_business: Business = new Business({
         id: found_business.id,
         ownerId: found_business.ownerId,
         name: req.body['name'] ? req.body['name'] : found_business.name,
@@ -72,16 +69,14 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
         subcategory: req.body['subcategory'] ? req.body['subcategory'] : found_business.subcategory,
         website: req.body['website'] ? req.body['website'] : found_business.website,
         email: req.body['email'] ? req.body['email'] : found_business.email
-    };
+    });
 
-    if(!isValidBusiness(modified_business)) {
+    if(!modified_business.isValid()) {
         rh.errorInvalidModification(res, "Business");
         return;
     }
 
-    const modifyQueryString: string = "UPDATE business SET name=?, address=?, city=?, state=?, zip=?, phone=?, category=?, subcategory=?, website=?, email=? WHERE id=?";
-    const modifyParams: any[] = modifyBusinessQueryParams(modified_business);
-    await db.query(modifyQueryString, modifyParams);
+    await db.query(Business.modifyString(), modified_business.modifyParams());
 
     rh.successResponse(res, {"business": modified_business});
 }
@@ -102,7 +97,7 @@ export async function removeBusiness(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    const found_business: Business = businessFromDb((results as OkPacket[])[0]);
+    const found_business: Business = Business.fromDatabase((results as OkPacket[])[0]);
 
     if(!found_business) {
         rh.errorNotFound(res, "Business");
@@ -120,10 +115,7 @@ export async function removeBusiness(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    const deleteQueryString:string = "DELETE FROM business WHERE id=?";
-    const deleteQueryParams:any[] = [found_business.id];
-
-    await db.query(deleteQueryString, deleteQueryParams);
+    await db.query(Business.deleteString(), found_business.deleteParams());
     rh.successResponse(res, {"message": "Removed Business", "business": found_business});
 }
 
@@ -136,7 +128,7 @@ export async function getBusinesses(db: Pool, req: Request, res: Response) {
     }
 
     let db_results = await db.query(queryString, params);
-    let db_businesses: Business[] = generateListOfBusinesses((db_results[0] as OkPacket[]));
+    let db_businesses: Business[] = Business.generateList((db_results[0] as OkPacket[]));
 
     rh.successResponse(res, {"businesses": db_businesses});
 }
@@ -150,7 +142,7 @@ export async function getBusinessDetails(db: Pool, req: Request, res: Response) 
         return;
     }
 
-    const found_business: Business = businessFromDb((businessResults as OkPacket[])[0]);
+    const found_business: Business = Business.fromDatabase((businessResults as OkPacket[])[0]);
 
     let business_reviews: Review[] = [];
     const reviewQueryString: string = "SELECT * FROM review WHERE business_id=?";
@@ -174,68 +166,4 @@ export async function getBusinessDetails(db: Pool, req: Request, res: Response) 
         "reviews": business_reviews
     }
     rh.successResponse(res, details_response);
-}
-
-export function generateListOfBusinesses(data: OkPacket[]): Business[] {
-    const return_value: Business[] = []
-    data.forEach( (row) => { 
-        const dbb: Business = businessFromDb(row);
-        return_value.push(dbb);
-    });
-        // console.log(return_value);
-    return return_value;
-}
-
-export function businessQueryParams(bus: Business): any[] {
-    return [
-        bus.ownerId, bus.name, bus.address, bus.city, bus.state, bus.zip,
-        bus.phone, bus.category, bus.subcategory, bus.website, bus.email
-    ];
-}
-
-export function modifyBusinessQueryParams(bus: Business): any[] {
-    return [
-        bus.name, bus.address, bus.city, bus.state, bus.zip, bus.phone, 
-        bus.category, bus.subcategory, bus.website, bus.email, bus.id
-    ];
-}
-
-export function isValidBusiness(business: Business): boolean {
-    const valid: boolean = 
-        // business.id != undefined && business.id != 0 &&
-        business.ownerId != undefined && business.ownerId != 0 &&
-        business.name != undefined && business.name != "" && 
-        business.address != undefined && business.address != "" && 
-        business.city != undefined && business.city != "" && 
-        business.state != undefined && business.state != "" && 
-        business.zip != undefined && business.zip != "" && 
-        business.phone != undefined && business.phone != "" && 
-        business.category != undefined && business.category != "" && 
-        business.subcategory != undefined && business.subcategory != "";
-
-    return valid;
-}
-
-export function findById(business: Business, id: number) {
-    return business.id == id;
-}
-
-export function businessFromDb(row: OkPacket): Business {
-    const rowMap: Map<string, string> = new Map(Object.entries(row));
-    const new_business: Business = {
-        id: parseInt(String(rowMap.get('id'))),
-        ownerId: parseInt(String(rowMap.get('owner_id'))),
-        name: String( rowMap.get('name')),
-        address: String( rowMap.get('address')),
-        city: String( rowMap.get('city')),
-        state: String( rowMap.get('state')),
-        zip: String( rowMap.get('zip')),
-        phone: String( rowMap.get('phone')),
-        category: String( rowMap.get('category')),
-        subcategory: String( rowMap.get('subcategory')),
-        website: String( rowMap.get('website')),
-        email: String( rowMap.get('email')),
-    }
-    // console.log(`new business: ${JSON.stringify(new_business)}`);
-    return new_business;
 }
