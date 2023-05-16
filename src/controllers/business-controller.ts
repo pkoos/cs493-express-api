@@ -1,9 +1,10 @@
+import { Request, Response } from 'express';
 import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
+
+import * as rh from './responses-helper';
 import { Business } from '../models/business';
 import { Photo, generateListofPhotos } from '../models/photo';
-import { Review, generateListofReviews } from '../models/review';
-import * as rh from './responses-helper';
-import { Request, Response } from 'express';
+import { Review } from '../models/review';
 
 export async function addNewBusiness(db: Pool, req: Request, res: Response) {    
     const new_business: Business = new Business({
@@ -149,7 +150,7 @@ export async function getBusinessDetails(db: Pool, req: Request, res: Response) 
     const reviewParams: any[] = [ found_business.id ];
     const [ reviewResults ] = await db.query(reviewQueryString, reviewParams);
     if((reviewResults as OkPacket[]).length > 0) {
-        business_reviews = generateListofReviews(reviewResults as OkPacket[]);
+        business_reviews = Review.generateList(reviewResults as OkPacket[]);
     }
 
     let business_photos: Photo[] = [];
