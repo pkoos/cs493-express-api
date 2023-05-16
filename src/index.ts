@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
 import { getBusinesses, addNewBusiness, modifyBusiness, removeBusiness, getBusinessDetails } from './controllers/business-controller';
 import { addReview, modifyReview, removeReview, getReviews } from './controllers/review-controller';
-import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './models/photo';
+import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './controllers/photo-controller';
 
 const app: Express = express();
 const port = process.env.PORT ?? 3000;

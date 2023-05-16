@@ -3,7 +3,7 @@ import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
 
 import * as rh from './responses-helper';
 import { Business } from '../models/business';
-import { Photo, generateListofPhotos } from '../models/photo';
+import { Photo } from '../models/photo';
 import { Review } from '../models/review';
 
 export async function addNewBusiness(db: Pool, req: Request, res: Response) {    
@@ -158,7 +158,7 @@ export async function getBusinessDetails(db: Pool, req: Request, res: Response) 
     const photoParams: any[] = [ found_business.id ];
     const [ photoResults ] = await db.query(photoQueryString, photoParams);
     if((photoResults as OkPacket[]).length > 0) {
-        business_photos = generateListofPhotos(photoResults as OkPacket[]);
+        business_photos = Photo.generateList(photoResults as OkPacket[]);
     }
 
     const details_response = {

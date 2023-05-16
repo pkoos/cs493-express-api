@@ -1,6 +1,7 @@
 import { OkPacket } from 'mysql2/promise';
 
 export class Business {
+    
     id: number = 0;
     ownerId: number = 0;
     name: string = "";
