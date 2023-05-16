@@ -7,7 +7,8 @@
     "build": "rimraf ./build && tsc",
     "start": "npm run build && node build/index.js",
     "start:dev": "npx nodemon",
-    "test": "npx mocha"
+    "test": "npx mocha",
+    "initdb": "./initdb.sh"
   },
   "keywords": [],
   "author": "",
