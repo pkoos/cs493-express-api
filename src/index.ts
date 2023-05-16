@@ -22,9 +22,9 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 
+const pageSize: number = 5;
 const baseApiPath: string = "/api/v1";
 initializeDatabase();
-
 
 const addBusinessPath:string = `${baseApiPath}/business/add`;
 app.post(addBusinessPath, (req: Request, res: Response) => addNewBusiness(db, req, res));
@@ -103,6 +103,10 @@ async function initializeDatabase() {
     await db.execute(createBusinessTable);
     await db.execute(createReviewTable);
     await db.execute(createPhotoTable);
+}
+
+export function getPageSize(): number {
+    return pageSize;
 }
 
 app.listen(port, () => {

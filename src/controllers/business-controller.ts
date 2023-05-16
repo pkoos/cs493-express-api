@@ -128,8 +128,8 @@ export async function getBusinesses(db: Pool, req: Request, res: Response) {
         params.push(parseInt(String(req.query.ownerId)));
     }
 
-    let db_results = await db.query(queryString, params);
-    let db_businesses: Business[] = Business.generateList((db_results[0] as OkPacket[]));
+    let [db_results] = await db.query(queryString, params);
+    let db_businesses: Business[] = Business.generateList((db_results as OkPacket[]));
 
     rh.successResponse(res, {"businesses": db_businesses});
 }
