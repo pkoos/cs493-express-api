@@ -12,7 +12,7 @@ const db:Pool = mysql2.createPool({
     user: "busi-user",
     password: "asdfqwer1234",
     database: "busirate",
-    host: "localhost", // use the container name
+    host: "db", // use the container name
     port: 3306
 });
 
@@ -22,6 +22,8 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 
 const baseApiPath: string = "/api/v1";
+initializeDatabase();
+
 
 const addBusinessPath:string = `${baseApiPath}/business/add`;
 app.post(addBusinessPath, (req: Request, res: Response) => addNewBusiness(db, req, res));
@@ -64,8 +66,42 @@ app.get(getReviewsPath, (req: Request, res: Response) => getReviews(db, req, res
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
-function initializeDatabase() {
+async function initializeDatabase() {
     console.log("Initializing database");
+    const createBusinessTable:string = 
+    `CREATE TABLE IF NOT EXISTS business(
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+        owner_id MEDIUMINT UNSIGNED NOT NULL, 
+        name VARCHAR(255) NOT NULL, 
+        address VARCHAR(255) NOT NULL, 
+        city VARCHAR(255) NOT NULL, 
+        state VARCHAR(255) NOT NULL, 
+        zip VARCHAR(255) NOT NULL, 
+        phone VARCHAR(255) NOT NULL, 
+        category VARCHAR(255) NOT NULL, 
+        subcategory VARCHAR(255) NOT NULL, 
+        website VARCHAR(255), email VARCHAR(255)
+    )`;
+    const createReviewTable: string = 
+    `CREATE TABLE IF NOT EXISTS review (
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+        business_id MEDIUMINT UNSIGNED NOT NULL, 
+        owner_id MEDIUMINT UNSIGNED NOT NULL, 
+        stars INT NOT NULL, 
+        dollars INT NOT NULL,
+        text TEXT NOT NULL
+    )`;
+    const createPhotoTable: string = 
+    `CREATE TABLE IF NOT EXISTS photo(
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+        owner_id INT UNSIGNED NOT NULL, 
+        business_id INT UNSIGNED NOT NULL, 
+        file_name VARCHAR(255) NOT NULL,
+        caption TEXT NOT NULL
+    )`;
+    await db.execute(createBusinessTable);
+    await db.execute(createReviewTable);
+    await db.execute(createPhotoTable);
 }
 
 app.listen(port, () => {
