@@ -1,39 +1,70 @@
+import { Model } from './model-interface';
+
 import {Request, Response } from 'express';
 import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
 import * as rh from '../controllers/responses-helper';
 
-export class Photo {
-    id: number = 0;
-    ownerId: number = 0;
-    businessId: number = 0;
+export class Photo extends Model<Photo> {
+    businessId: number = -1;
     fileName: string = "";
     caption: string = "";
 
     public constructor(init?: Partial<Photo>) {
+        super(init);
         Object.assign(this, init);
     }
 
+    isValid(): boolean {
+        const valid: boolean =
+            this.id != undefined && this.id != -1 &&
+            this.ownerId != undefined && this.ownerId != -1 &&
+            this.businessId != undefined && this.businessId > 0 &&
+            this.fileName != undefined && this.fileName != "";
+            return valid;
+    }
+
+    newQueryParams(): any[] {
+        return [ this.ownerId, this.businessId, this.fileName, this.caption ];
+    }
+
+    modifyQueryParams(): any[] {
+        return [ this.caption, this.id ]
+    }
+
+    generateList(data: OkPacket[]): Photo[] {
+        const return_value: Photo[] = [];
+        data.forEach( (row) => {
+            // const dbp: Photo = photoFromDb(row);
+            const dbp: Photo = this.fromDatabase(row);
+            return_value.push(dbp);
+        });
+    return return_value;
+    }
+
+    fromDatabase(row: OkPacket): Photo {
+        const dbp: Photo = super.fromDatabase(row);
+        console.log(`photo from db: ${JSON.stringify(dbp)}`);
+        return super.fromDatabase(row);
+    }
 }
 
 export async function addPhoto(db: Pool, req: Request, res: Response) {    
-    const new_photo: Photo = {
+    const new_photo: Photo = new Photo({
         id: -20,
         ownerId: req.body["ownerId"],
         businessId: req.body['businessId'],
         fileName: req.body['fileName'],
         caption: req.body['caption']
-    };
+    });
 
-    if(!isValidPhoto(new_photo)) { // either invalid values in request body, or missing fields from request body
+    if(!new_photo.isValid()) { // either invalid values in request body, or missing fields from request body
         rh.errorInvalidBody(res);
         return;
     }
     const queryString:string = `INSERT INTO photo (owner_id, business_id, file_name, caption) 
                                 VALUES(?, ?, ?, ?)`;
-    const params:any[] = newPhotoQueryParams(new_photo);
-    const db_results = await db.query(queryString, params);
-    const new_id = (db_results[0] as ResultSetHeader).insertId;
-    new_photo.id = new_id;
+    const [db_results] = await db.query(queryString, new_photo.newQueryParams());
+    new_photo.id = (db_results as ResultSetHeader).insertId;
     rh.successResponse(res, {"photo": new_photo});
 }
 
@@ -58,13 +89,13 @@ export async function modifyPhoto(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    const modified_photo: Photo = {
+    const modified_photo: Photo = new Photo({
         id: found_photo.id,
         ownerId: found_photo.ownerId,
         businessId: found_photo.businessId,
         fileName: found_photo.fileName,
         caption: req.body['caption'] ?? found_photo.caption
-    };
+    });
 
     if(!isValidPhoto(modified_photo)) {
         rh.errorInvalidModification(res, "Business");
@@ -117,7 +148,8 @@ export async function getPhotos(db: Pool, req: Request, res: Response) {
 
     params.push(parseInt(req.query.ownerId as string));
     let [db_results] = await db.query(queryString, params);
-    let db_photos: Photo[] = generateListofPhotos(db_results as OkPacket[]);
+    // let db_photos: Photo[] = generateListofPhotos(db_results as OkPacket[]);
+    let db_photos: Photo[] = new Photo().generateList(db_results as OkPacket[]);
 
     rh.successResponse(res, {"ownerId": req.query.ownerId, "photos": db_photos});
 }
@@ -134,13 +166,13 @@ export function isValidPhoto(photo: Photo): boolean {
 
 export function photoFromDb(row: OkPacket): Photo {
     const rowMap: Map<string, string> = new Map(Object.entries(row));
-    const new_photo: Photo = {
+    const new_photo: Photo = new Photo({
         id: parseInt(String(rowMap.get('id'))),
         ownerId: parseInt(String(rowMap.get('owner_id'))),
         businessId: parseInt(String(rowMap.get('business_id'))),
         fileName: String(rowMap.get('file_name')),
         caption: String(rowMap.get('caption'))
-    }
+    });
     return new_photo
 }
 
