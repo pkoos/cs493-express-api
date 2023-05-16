@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
-import { getBusinesses, addNewBusiness, modifyBusiness, removeBusiness, getBusinessDetails } from './models/business';
+import { getBusinesses, addNewBusiness, modifyBusiness, removeBusiness, getBusinessDetails } from './controllers/business-controller';
 import { addReview, modifyReview, removeReview, getReviews } from './models/review';
 import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './models/photo';
 
