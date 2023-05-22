@@ -6,14 +6,13 @@ import { addReview, modifyReview, removeReview, getReviews } from './controllers
 import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './controllers/photo-controller';
 
 const app: Express = express();
-const port = process.env.PORT ?? 3000;
+const port = process.env.PORT ?? 8000;
 const db:Pool = mysql2.createPool({
     connectionLimit: 10,
-    user: "busi-user",
-    password: "asdfqwer1234",
-    database: "busirate",
-    host: "localhost", // use the container name
-    // host: "db", // use the container name
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    host: process.env.MYSQL_HOST ?? "localhost",
     port: 3306
 });
 
@@ -100,6 +99,7 @@ async function initializeDatabase() {
         file_name VARCHAR(255) NOT NULL,
         caption TEXT NOT NULL
     )`;
+    // await db.execute(useDatabase);
     await db.execute(createBusinessTable);
     await db.execute(createReviewTable);
     await db.execute(createPhotoTable);

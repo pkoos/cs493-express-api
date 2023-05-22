@@ -6,5 +6,4 @@ RUN npm install
 COPY . .
 EXPOSE ${PORT}
 
-# mysql line here
 CMD [ "npm", "start" ]
