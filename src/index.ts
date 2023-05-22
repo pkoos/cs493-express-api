@@ -99,7 +99,6 @@ async function initializeDatabase() {
         file_name VARCHAR(255) NOT NULL,
         caption TEXT NOT NULL
     )`;
-    // await db.execute(useDatabase);
     await db.execute(createBusinessTable);
     await db.execute(createReviewTable);
     await db.execute(createPhotoTable);
