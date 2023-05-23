@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
+import { getPageSize, validatePageSize } from '../index';
 
 import * as rh from './responses-helper';
 import { Business } from '../models/business';
@@ -122,16 +123,41 @@ export async function removeBusiness(db: Pool, req: Request, res: Response) {
 
 export async function getBusinesses(db: Pool, req: Request, res: Response) {
     let queryString:string = "SELECT * FROM business";
+    let countString: string = "SELECT COUNT(*) AS count FROM business";
     const params:any[] = [];
+    const count_params:any[] = [];
+
+    
+
     if(req.query.ownerId) {
         queryString = queryString.concat(" WHERE owner_id=?");
-        params.push(parseInt(String(req.query.ownerId)));
+        countString = countString.concat(" WHERE owner_id=?");
+        params.push(parseInt(req.query.ownerId as string));
+        count_params.push(parseInt(req.query.ownerId as string));
     }
 
-    let [db_results] = await db.query(queryString, params);
-    let db_businesses: Business[] = Business.generateList((db_results as OkPacket[]));
+    const [count_results] = await db.query(countString, count_params);
+    const max_page: number = Math.ceil( (count_results as any)[0].count / getPageSize());
+    const page: number = validatePageSize(parseInt(req.query.page as string), max_page);
 
-    rh.successResponse(res, {"businesses": db_businesses});
+    queryString = queryString.concat(" LIMIT ? OFFSET ?");
+    params.push(getPageSize()); // method from index file
+    params.push(getPageSize() * (page - 1)); // offset
+    let [db_results] = await db.query(queryString, params);
+    let db_businesses: Business[] = [];
+    if((db_results as OkPacket[]).length > getPageSize()) {
+        db_businesses = Business.generateList((db_results as OkPacket[]).slice(0, 5));
+    }
+    else {
+        db_businesses = Business.generateList((db_results as OkPacket[]));
+    }
+
+    rh.successResponse(res, {
+        "current_page": page,
+        "last_page": max_page,
+        "page_size": getPageSize(),
+        "businesses": db_businesses
+    });
 }
 
 export async function getBusinessDetails(db: Pool, req: Request, res: Response) {

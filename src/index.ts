@@ -108,6 +108,16 @@ export function getPageSize(): number {
     return pageSize;
 }
 
+export function validatePageSize(page: number, max_page: number): number {
+    if(page || page < 1) {
+        return 1;
+    }
+    if(page > max_page) {
+        return max_page;
+    }
+    return page;
+}
+
 app.listen(port, () => {
     console.log(`⚡️[server]: Server is running at http://localhost:${port}.`);
 });
