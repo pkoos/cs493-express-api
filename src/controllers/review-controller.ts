@@ -4,6 +4,7 @@ import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
 import * as rh from './responses-helper';
 
 import { Review } from '../models/review';
+import { getPageSize, validatePageSize } from '../index';
 
 export async function addReview(db: Pool, req: Request, res: Response) {    
     const prevQueryString:string = "SELECT * FROM review WHERE owner_id=? AND business_id=?";
@@ -109,7 +110,7 @@ export async function removeReview(db: Pool, req: Request, res: Response) {
 }
 
 export async function getReviews(db: Pool, req: Request, res: Response) {
-    const queryString:string = "SELECT * FROM review WHERE owner_id=?";
+    let queryString:string = "SELECT * FROM review WHERE owner_id=?";
     const params: any[] = [];
     if(!req.query.ownerId) {
         rh.errorInvalidQuery(res);
@@ -117,8 +118,26 @@ export async function getReviews(db: Pool, req: Request, res: Response) {
     }
 
     params.push(parseInt(req.query.ownerId as string));
+    
+    const countString: string = "SELECT COUNT(*) as count FROM review WHERE owner_id=?";
+    const [count_results] = await db.query(countString, params);
+    const max_page: number = Math.ceil((count_results as any)[0].count / getPageSize());
+    let page: number;
+    if(req.query.page) {
+        page = validatePageSize(parseInt(req.query.page as string), max_page);
+    }
+    else {
+        page = 1;
+    }
+    queryString = queryString.concat(" LIMIT ? OFFSET ?");
+    params.push(getPageSize());
+    params.push(getPageSize() * (page - 1));
     let [db_results] = await db.query(queryString, params);
     let db_reviews: Review[] = Review.generateList(db_results as OkPacket[]);
 
-    rh.successResponse(res, {"ownerId": req.query.ownerId, "reviews": db_reviews});
+    rh.successResponse(res, {
+        "current_page": page,
+        "last_page": max_page,
+        "page_size": getPageSize(),
+        "ownerId": req.query.ownerId, "reviews": db_reviews});
 }
