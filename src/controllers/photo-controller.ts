@@ -3,6 +3,8 @@ import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
 
 import * as rh from './responses-helper';
 import { Photo } from '../models/photo';
+import { getPageSize, validatePageSize } from '..';
+import { validateHeaderName } from 'http';
 
 export async function addPhoto(db: Pool, req: Request, res: Response) {    
     const new_photo: Photo = new Photo({
@@ -88,7 +90,7 @@ export async function removePhoto(db: Pool, req: Request, res: Response) {
 }
 
 export async function getPhotos(db: Pool, req: Request, res: Response) {
-    const queryString:string = "SELECT * FROM photo WHERE owner_id=?";
+    let queryString:string = "SELECT * FROM photo WHERE owner_id=?";
     const params: any[] = [];
     if(!req.query.ownerId) {
         rh.errorInvalidQuery(res);
@@ -96,9 +98,31 @@ export async function getPhotos(db: Pool, req: Request, res: Response) {
     }
 
     params.push(parseInt(req.query.ownerId as string));
-    let [db_results] = await db.query(queryString, params);
-    // let db_photos: Photo[] = generateListofPhotos(db_results as OkPacket[]);
-    let db_photos: Photo[] = Photo.generateList(db_results as OkPacket[]);
 
-    rh.successResponse(res, {"ownerId": req.query.ownerId, "photos": db_photos});
+    const countString: string = "SELECT COUNT(*) AS count FROM photo WHERE owner_id=?";
+    const [count_results] = await db.query(countString, params);
+    const max_page: number = Math.ceil((count_results as any)[0].count / getPageSize());
+    let page: number;
+    // let page: number = req.query.page ? validatePageSize(parseInt(req.query.page as string), max_page): 1;
+    if(req.query.page) {
+        page = validatePageSize(parseInt(req.query.page as string), max_page);
+    }
+    else {
+        page = 1;
+    }
+    queryString = queryString.concat(" LIMIT ? OFFSET ?");
+    console.log(`validatePageSize: ${page}, query param: ${req.query.page}`)
+    params.push(getPageSize());
+    params.push(getPageSize() * (page - 1));
+
+    console.log(`queryString: ${queryString} params: ${params}`)
+    let [db_results] = await db.query(queryString, params);
+    let db_photos: Photo[] = (db_results as OkPacket[]).length > getPageSize() ? Photo.generateList((db_results as OkPacket[]).slice(0, 5)) : Photo.generateList((db_results as OkPacket[]));
+    
+    rh.successResponse(res, {
+        "current_page": page,
+        "last_page": max_page,
+        "page_size": getPageSize(),
+        "ownerId": req.query.ownerId, 
+        "photos": db_photos});
 }

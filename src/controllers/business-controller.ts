@@ -138,7 +138,7 @@ export async function getBusinesses(db: Pool, req: Request, res: Response) {
 
     const [count_results] = await db.query(countString, count_params);
     const max_page: number = Math.ceil( (count_results as any)[0].count / getPageSize());
-    const page: number = validatePageSize(parseInt(req.query.page as string), max_page);
+    const page: number = req.query.page ? validatePageSize(parseInt(req.query.page as string), max_page) : 1;
 
     queryString = queryString.concat(" LIMIT ? OFFSET ?");
     params.push(getPageSize()); // method from index file

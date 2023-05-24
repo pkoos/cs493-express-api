@@ -109,13 +109,19 @@ export function getPageSize(): number {
 }
 
 export function validatePageSize(page: number, max_page: number): number {
-    if(page || page < 1) {
-        return 1;
+    console.log(`validatePageSize(): page: ${page} max_page: ${max_page}`);
+    let rv:number;
+    if(page == undefined || page < 1) {
+        rv = 1;
     }
-    if(page > max_page) {
-        return max_page;
+    else if(page > max_page) {
+        rv = max_page;
     }
-    return page;
+    else {
+        rv = page;
+    }
+    console.log(`validatePageSize(): rv: ${rv}`)
+    return rv;
 }
 
 app.listen(port, () => {
