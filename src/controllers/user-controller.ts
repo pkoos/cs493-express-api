@@ -1,36 +1,62 @@
+import { Request, Response } from "express";
+import { Pool, ResultSetHeader } from 'mysql2/promise';
+import { compare, hash } from 'bcryptjs';
+
+import * as rh from "./responses-helper";
 import { User } from '../models/user';
-import { DbController } from './db-controller';
 
-export class UserController {
+export async function addUser(db: Pool, req: Request, res: Response) {
+    const new_user: User = new User({
+        id: -20,
+        name: req.body["name"],
+        email: req.body["email"],
+        admin: false
+    });
+    const new_hash: string = await hash(req.body["password"], 8);
+    new_user.password = new_hash;
 
-    private insertString: string = "INSERT INTO user (email, businessOwner, hash) VALUES ($email, $businessOwner, $hash);";
-    private findString: string = "SELECT * FROM user WHERE email='$email';";
-    private removeString: string = "DELETE FROM user WHERE id=$id;";
-
-    public static addNewUser(): User {
-        // validate information given
-        // if valid, add user to database
-        // if not valid, do something else
-        return new User();
-    }
-    
-    public static findUser(email: string): User {
-        
-        // do database stuff to find the user and their hash
-        
-        return new User();
-    }
-    
-    public static  generateUserHash(pw: string) {
-        const padPw: string = `${pw}${process.env.PADDING}`.substring(0, 20);
-        const preHash: string = `${process.env.SALT}${padPw}${process.env.SALT2}`;
-        const postHash: string = Buffer.from(preHash, 'binary').toString('base64');
-        return postHash;
+    if(!new_user.isValid()) {
+        rh.errorInvalidBody(res);
+        return;
     }
 
-    public static removeUser() {
-        // verify the user is in the database
-        // remove the user from the database
-    }
+    const [db_results] = await db.query(User.insertString(), new_user.insertParams());
+    new_user.id = (db_results as ResultSetHeader).insertId;
+    rh.successResponse(res, {"user": new_user});
 }
 
+export async function loginUser(db: Pool, req: Request, res: Response) {
+    if(!(req.body["id"] && req.body["password"])) {
+        rh.errorInvalidBody(res);
+        return;
+    }
+    const authenticated: boolean = await validateUser(db, req.body["id"], req.body["password"]);
+    if(!authenticated) {
+        rh.errorInvalidCredentials(res);
+        return;
+    }
+    rh.successResponse(res, {"message": "Logged in."});
+}
+
+export function getUserDetails(db: Pool, req: Request, res: Response) {
+    rh.successResponse(res, {});
+}
+
+export async function validateUser(db: Pool, id: number, password: string): Promise<boolean> {
+    const user: User = await getUserByID(db, id, false);
+    const validated: boolean = await compare(password, user.password);
+    console.log(`validated: ${validated}`)
+    return validated;
+}
+
+export async function getUserByID(db: Pool, user_id: number, includePassword: boolean): Promise<User> {
+    const queryString:string = "SELECT * FROM user WHERE id=?";
+    const params: any[] = [user_id];
+    const [db_results] = await db.query(queryString, params);
+    console.log(`db_results.length: ${(db_results as any[]).length}`);
+    const db_user: User = (db_results as any[]).length == 0 ? new User() : User.fromDatabase(db_results as any[]);
+    if(includePassword) {
+        db_user.password = "";
+    }
+    return db_user;
+}

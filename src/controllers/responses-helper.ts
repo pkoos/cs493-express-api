@@ -41,3 +41,7 @@ export function successResponse(res: Response, successDetails: Object) {
     
     res.status(200).json(success_json);
 }
+
+export function errorInvalidCredentials(res: Response) {
+    genericErrorResponse(res, 500, "Error logging in.");
+}

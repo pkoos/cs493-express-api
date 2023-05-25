@@ -4,6 +4,7 @@ import mysql2, { Pool } from 'mysql2/promise';
 import { getBusinesses, addNewBusiness, modifyBusiness, removeBusiness, getBusinessDetails } from './controllers/business-controller';
 import { addReview, modifyReview, removeReview, getReviews } from './controllers/review-controller';
 import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './controllers/photo-controller';
+import { addUser, getUserDetails, loginUser } from './controllers/user-controller';
 
 const app: Express = express();
 const port = process.env.PORT ?? 8000;
@@ -64,6 +65,15 @@ app.get(getphotosPath, (req: Request, res: Response) => getPhotos(db, req, res))
 const getReviewsPath: string = `${baseApiPath}/reviews`;
 app.get(getReviewsPath, (req: Request, res: Response) => getReviews(db, req, res));
 
+const addUserPath: string = `${baseApiPath}/user/add`;
+app.post(addUserPath, (req: Request, res: Response) => addUser(db, req, res));
+
+const loginUserPath: string = `${baseApiPath}/user/login`;
+app.post(loginUserPath, (req: Request, res: Response) => loginUser(db, req, res));
+
+const userDetailsPath: string = `${baseApiPath}/users`;
+app.get(`${userDetailsPath}/:id`, (req: Request, res: Response) => getUserDetails(db, req, res));
+
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
 async function initializeDatabase() {
@@ -99,6 +109,17 @@ async function initializeDatabase() {
         file_name VARCHAR(255) NOT NULL,
         caption TEXT NOT NULL
     )`;
+    const createUserTable: string = 
+    `
+    CREATE TABLE IF NOT EXISTS user(
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        password VARCHAR(60) NOT NULL,
+        admin BOOLEAN NOT NULL
+    )
+    `
+    await db.execute(createUserTable);
     await db.execute(createBusinessTable);
     await db.execute(createReviewTable);
     await db.execute(createPhotoTable);
