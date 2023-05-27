@@ -22,7 +22,6 @@ export class User {
 
     static fromDatabase(row: any[]): User {
         const db_user: any = row[0];
-        console.log(`row: ${JSON.stringify(row)}`);
         const user: User = new User({
             id: db_user.id,
             name: db_user.name,

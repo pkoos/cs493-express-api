@@ -4,6 +4,7 @@ import { compare, hash } from 'bcryptjs';
 
 import * as rh from "./responses-helper";
 import { User } from '../models/user';
+import { generateAuthToken } from "../index";
 
 export async function addUser(db: Pool, req: Request, res: Response) {
     const new_user: User = new User({
@@ -35,17 +36,28 @@ export async function loginUser(db: Pool, req: Request, res: Response) {
         rh.errorInvalidCredentials(res);
         return;
     }
-    rh.successResponse(res, {"message": "Logged in."});
+    rh.successResponse(res, {
+        "message": "Logged in.",
+        "token": generateAuthToken(req.body["id"])
+    });
 }
 
-export function getUserDetails(db: Pool, req: Request, res: Response) {
-    rh.successResponse(res, {});
+export async function getUserDetails(db: Pool, req: Request, res: Response) {
+    const user_id: number = parseInt(req.params.id);
+    const user: User = await getUserByID(db, user_id, true);
+    if(!user.isValid()) {
+        rh.errorNotFound(res, "User");
+        return;
+    }
+
+    rh.successResponse(res, {
+        "user": user
+    });
 }
 
 export async function validateUser(db: Pool, id: number, password: string): Promise<boolean> {
     const user: User = await getUserByID(db, id, false);
     const validated: boolean = await compare(password, user.password);
-    console.log(`validated: ${validated}`)
     return validated;
 }
 
@@ -53,7 +65,6 @@ export async function getUserByID(db: Pool, user_id: number, includePassword: bo
     const queryString:string = "SELECT * FROM user WHERE id=?";
     const params: any[] = [user_id];
     const [db_results] = await db.query(queryString, params);
-    console.log(`db_results.length: ${(db_results as any[]).length}`);
     const db_user: User = (db_results as any[]).length == 0 ? new User() : User.fromDatabase(db_results as any[]);
     if(includePassword) {
         db_user.password = "";

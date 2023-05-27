@@ -45,3 +45,7 @@ export function successResponse(res: Response, successDetails: Object) {
 export function errorInvalidCredentials(res: Response) {
     genericErrorResponse(res, 500, "Error logging in.");
 }
+
+export function errorInvalidToken(res: Response) {
+    genericErrorResponse(res, 401, "Invalid authentication token provided.");
+}

@@ -111,11 +111,9 @@ export async function getPhotos(db: Pool, req: Request, res: Response) {
         page = 1;
     }
     queryString = queryString.concat(" LIMIT ? OFFSET ?");
-    console.log(`validatePageSize: ${page}, query param: ${req.query.page}`)
     params.push(getPageSize());
     params.push(getPageSize() * (page - 1));
 
-    console.log(`queryString: ${queryString} params: ${params}`)
     let [db_results] = await db.query(queryString, params);
     let db_photos: Photo[] = (db_results as OkPacket[]).length > getPageSize() ? Photo.generateList((db_results as OkPacket[]).slice(0, 5)) : Photo.generateList((db_results as OkPacket[]));
     

@@ -1,6 +1,15 @@
+/*
+    Package Imports
+*/
 import express, { Express, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
+import * as jwt from 'jsonwebtoken';
+
+/*
+    Project Imports
+*/
+import * as rh from './controllers/responses-helper';
 import { getBusinesses, addNewBusiness, modifyBusiness, removeBusiness, getBusinessDetails } from './controllers/business-controller';
 import { addReview, modifyReview, removeReview, getReviews } from './controllers/review-controller';
 import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './controllers/photo-controller';
@@ -16,6 +25,7 @@ const db:Pool = mysql2.createPool({
     host: process.env.MYSQL_HOST ?? "localhost",
     port: 3306
 });
+const secretKey: string = "SuperSecret";
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -77,7 +87,6 @@ app.get(`${userDetailsPath}/:id`, (req: Request, res: Response) => getUserDetail
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
 async function initializeDatabase() {
-    console.log("Initializing database");
     const createBusinessTable:string = 
     `CREATE TABLE IF NOT EXISTS business(
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, 
@@ -130,19 +139,37 @@ export function getPageSize(): number {
 }
 
 export function validatePageSize(page: number, max_page: number): number {
-    console.log(`validatePageSize(): page: ${page} max_page: ${max_page}`);
-    let rv:number;
     if(page == undefined || page < 1) {
-        rv = 1;
+        return 1;
     }
-    else if(page > max_page) {
-        rv = max_page;
+    if(page > max_page) {
+        return max_page;
     }
-    else {
-        rv = page;
+
+    return page;
+}
+
+export function generateAuthToken(user_id: number): string {
+    const payload = { sub: user_id };
+
+    return jwt.sign(payload, secretKey, { expiresIn: '24h'});
+}
+
+export function requireAuthentication(req: Request, res: Response, next: any) {
+    const auth_header: string = req.get("Authorization") as string;
+    console.log(`auth_header: ${auth_header}`);
+    const auth_header_parts: string[] = auth_header.split(" ");
+    console.log(`auth_header_parts: ${auth_header_parts}`);
+    const token: string = auth_header_parts[0] === "Bearer" ? auth_header_parts[1] : "";
+    try {
+        const payload = jwt.verify(token, secretKey);
+        console.log(`payload: ${payload}`)
+        req.params["user"] = payload as string;    
     }
-    console.log(`validatePageSize(): rv: ${rv}`)
-    return rv;
+    catch {
+        rh.errorInvalidToken(res);
+    }
+    next();
 }
 
 app.listen(port, () => {
