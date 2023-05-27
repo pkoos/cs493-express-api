@@ -28,6 +28,7 @@ export const db:Pool = mysql2.createPool({
 });
 
 dotenv.config();
+console.log(`process.env: ${JSON.stringify(process.env)}`)
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -154,7 +155,7 @@ export function validatePageSize(page: number, max_page: number): number {
 export function generateAuthToken(user_id: number): string {
     const payload = { sub: user_id };
 
-    return jwt.sign(payload, process.env.secretKey ?? '', { expiresIn: '24h'});
+    return jwt.sign(payload, process.env.SECRET_KEY ?? '', { expiresIn: '24h'});
 }
 
 export function requireAuthentication(req: Request, res: Response, next: NextFunction) {
@@ -166,7 +167,7 @@ export function requireAuthentication(req: Request, res: Response, next: NextFun
     const auth_header_parts: string[] = auth_header.split(" ");
     const token: string = auth_header_parts[0] === "Bearer" ? auth_header_parts[1] : "";
     try {
-        const payload = jwt.verify(token, process.env.secretKey ?? '');
+        const payload = jwt.verify(token, process.env.SECRET_KEY ?? '');
         req.loggedInID = parseInt(payload.sub as string);
     }
     catch {
