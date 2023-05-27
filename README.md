@@ -1,5 +1,14 @@
 # API calls and requirements
 
+
+## Setup
+
+There is one step required to successfully run this project and API.
+
+### `.env` file
+
+Use the `.env.example` file as a template. Either copy or create the `.env` file with the correct values.
+
 ## Summary
 
 The base path for all API calls is `/api/v1`.
