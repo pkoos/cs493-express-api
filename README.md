@@ -377,3 +377,7 @@ Once the container is built, you can run it with the following command:
 ```
 docker run -d --name busirate-image -p 8000:8000 busi-rate
 ```
+
+### Useful Sources
+
+* [Property 'X' does not exist on type Request in TypeScript](https://bobbyhadz.com/blog/typescript-property-does-not-exist-on-type-request)
