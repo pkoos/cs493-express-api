@@ -35,6 +35,17 @@ export async function addReview(db: Pool, req: Request, res: Response) {
 }
 
 export async function modifyReview(db: Pool, req: Request, res: Response) {
+    const owner_id = req.body['ownerId'];
+    if(!owner_id) {
+        rh.errorInvalidBody(res);
+        return;
+    }
+
+    if(owner_id !== req.loggedInID) {
+        rh.errorNoModify(res, "Review");
+        return;
+    }
+    
     const queryString:string = "SELECT * FROM review WHERE id=?";
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
@@ -48,11 +59,7 @@ export async function modifyReview(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    const owner_id = req.body['ownerId'];
-    if(!owner_id) {
-        rh.errorInvalidBody(res);
-        return;
-    }
+
 
     if(found_review.ownerId != owner_id) {
         rh.errorNoModify(res, "Review");

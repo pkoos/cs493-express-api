@@ -1,7 +1,7 @@
 /*
     Package Imports
 */
-import express, { Express, Request, Response } from 'express';
+import express, { Express, NextFunction, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
 import * as jwt from 'jsonwebtoken';
@@ -55,7 +55,7 @@ const addReviewPath:string = `${baseApiPath}/review/add`;
 app.post(addReviewPath, (req: Request, res: Response) => addReview(db, req, res));
 
 const modifyReviewPath:string = `${baseApiPath}/review/modify`;
-app.post(`${modifyReviewPath}/:id`, (req: Request, res: Response) => modifyReview(db, req, res));
+app.post(`${modifyReviewPath}/:id`, requireAuthentication, (req: Request, res: Response) => modifyReview(db, req, res));
 
 const removeReviewPath:string = `${baseApiPath}/review/remove`; 
 app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => removeReview(db, req, res));
@@ -155,19 +155,21 @@ export function generateAuthToken(user_id: number): string {
     return jwt.sign(payload, secretKey, { expiresIn: '24h'});
 }
 
-export function requireAuthentication(req: Request, res: Response, next: any) {
+export function requireAuthentication(req: Request, res: Response, next: NextFunction) {
     const auth_header: string = req.get("Authorization") as string;
-    console.log(`auth_header: ${auth_header}`);
+    if(!auth_header) {
+        rh.errorInvalidToken(res);
+        return;
+    }
     const auth_header_parts: string[] = auth_header.split(" ");
-    console.log(`auth_header_parts: ${auth_header_parts}`);
     const token: string = auth_header_parts[0] === "Bearer" ? auth_header_parts[1] : "";
     try {
         const payload = jwt.verify(token, secretKey);
-        console.log(`payload: ${payload}`)
-        req.params["user"] = payload as string;    
+        req.loggedInID = parseInt(payload.sub as string);
     }
     catch {
         rh.errorInvalidToken(res);
+        return;
     }
     next();
 }
