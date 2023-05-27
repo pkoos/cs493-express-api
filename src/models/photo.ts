@@ -1,8 +1,4 @@
-import { Model } from './model-interface';
-
-import {Request, Response } from 'express';
-import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
-import * as rh from '../controllers/responses-helper';
+import { OkPacket } from 'mysql2/promise';
 
 export class Photo {
     id: number = -1;
