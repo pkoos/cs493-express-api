@@ -28,7 +28,6 @@ export const db:Pool = mysql2.createPool({
 });
 
 dotenv.config();
-console.log(`process.env: ${JSON.stringify(process.env)}`)
 
 app.use(bodyParser.urlencoded({
     extended: true
@@ -49,7 +48,7 @@ const removeBusinessPath:string = `${baseApiPath}/business/remove`;
 app.post(`${removeBusinessPath}/:id`, requireAuthentication, (req: Request, res: Response) => removeBusiness(req, res));
 
 const businessDetailsPath:string = `${baseApiPath}/business`
-app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => getBusinessDetails(req, res));
+app.get(`${businessDetailsPath}/:id`, requireAuthentication, (req: Request, res: Response) => getBusinessDetails(req, res));
 
 const getBusinessesPath:string = `${baseApiPath}/businesses`;
 app.get(getBusinessesPath, (req: Request, res: Response) => getBusinesses(req, res));
