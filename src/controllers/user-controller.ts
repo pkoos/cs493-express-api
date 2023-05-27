@@ -4,9 +4,9 @@ import { compare, hash } from 'bcryptjs';
 
 import * as rh from "./responses-helper";
 import { User } from '../models/user';
-import { generateAuthToken } from "../index";
+import { generateAuthToken, db } from "../index";
 
-export async function addUser(db: Pool, req: Request, res: Response) {
+export async function addUser(req: Request, res: Response) {
     const new_user: User = new User({
         id: -20,
         name: req.body["name"],
@@ -26,12 +26,12 @@ export async function addUser(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"user": new_user});
 }
 
-export async function loginUser(db: Pool, req: Request, res: Response) {
+export async function loginUser(req: Request, res: Response) {
     if(!(req.body["id"] && req.body["password"])) {
         rh.errorInvalidBody(res);
         return;
     }
-    const authenticated: boolean = await validateUser(db, req.body["id"], req.body["password"]);
+    const authenticated: boolean = await validateUser(req.body["id"], req.body["password"]);
     if(!authenticated) {
         rh.errorInvalidCredentials(res);
         return;
@@ -42,9 +42,9 @@ export async function loginUser(db: Pool, req: Request, res: Response) {
     });
 }
 
-export async function getUserDetails(db: Pool, req: Request, res: Response) {
+export async function getUserDetails(req: Request, res: Response) {
     const user_id: number = parseInt(req.params.id);
-    const user: User = await getUserByID(db, user_id, true);
+    const user: User = await getUserByID(user_id, true);
     if(!user.isValid()) {
         rh.errorNotFound(res, "User");
         return;
@@ -55,13 +55,13 @@ export async function getUserDetails(db: Pool, req: Request, res: Response) {
     });
 }
 
-export async function validateUser(db: Pool, id: number, password: string): Promise<boolean> {
-    const user: User = await getUserByID(db, id, false);
+export async function validateUser(id: number, password: string): Promise<boolean> {
+    const user: User = await getUserByID(id, false);
     const validated: boolean = await compare(password, user.password);
     return validated;
 }
 
-export async function getUserByID(db: Pool, user_id: number, includePassword: boolean): Promise<User> {
+export async function getUserByID(user_id: number, includePassword: boolean): Promise<User> {
     const queryString:string = "SELECT * FROM user WHERE id=?";
     const params: any[] = [user_id];
     const [db_results] = await db.query(queryString, params);

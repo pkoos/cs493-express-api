@@ -1,16 +1,27 @@
 import { Request, Response } from 'express';
 import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
-import { getPageSize, validatePageSize } from '../index';
+import { getPageSize, validatePageSize, db } from '../index';
 
 import * as rh from './responses-helper';
 import { Business } from '../models/business';
 import { Photo } from '../models/photo';
 import { Review } from '../models/review';
 
-export async function addNewBusiness(db: Pool, req: Request, res: Response) {    
+export async function addNewBusiness(req: Request, res: Response) {    
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
+        rh.errorInvalidBody(res);
+        return;
+    }
+
+    if(owner_id !== req.loggedInID) {
+        rh.errorNoModify(res, "Review");
+        return;
+    }
+
     const new_business: Business = new Business({
         id: -20,
-        ownerId: req.body["ownerId"],
+        ownerId: owner_id,
         name: req.body["name"],
         address: req.body["address"],
         city: req.body["city"],
@@ -33,7 +44,18 @@ export async function addNewBusiness(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"business": new_business});
 }
 
-export async function modifyBusiness(db: Pool, req: Request, res: Response) {
+export async function modifyBusiness(req: Request, res: Response) {
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
+        rh.errorInvalidBody(res);
+        return;
+    }
+
+    if(owner_id !== req.loggedInID) {
+        rh.errorNoModify(res, "Review");
+        return;
+    }
+    
     const queryString:string = "SELECT * FROM business WHERE id=?";
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
@@ -44,12 +66,6 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
     const found_business: Business = Business.fromDatabase((results as OkPacket[])[0]);
     if(!found_business) {
         rh.errorNotFound(res, "Business");
-        return;
-    }
-
-    const owner_id = req.body['ownerId'];
-    if(!owner_id) {
-        rh.errorInvalidBody(res);
         return;
     }
 
@@ -83,11 +99,16 @@ export async function modifyBusiness(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"business": modified_business});
 }
 
-export async function removeBusiness(db: Pool, req: Request, res: Response) {
+export async function removeBusiness(req: Request, res: Response) {
     
-    const ownerId:number = req.body['ownerId'];
-    if(!ownerId) {
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
         rh.errorInvalidBody(res);
+        return;
+    }
+
+    if(owner_id !== req.loggedInID) {
+        rh.errorNoModify(res, "Review");
         return;
     }
 
@@ -106,12 +127,6 @@ export async function removeBusiness(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    const owner_id: number = req.body["ownerId"];
-    if(!owner_id) {
-        rh.errorInvalidBody(res);
-        return;
-    }
-
     if(owner_id != found_business.ownerId) {
         rh.errorNoRemove(res, "Business");
         return;
@@ -121,7 +136,7 @@ export async function removeBusiness(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"message": "Removed Business", "business": found_business});
 }
 
-export async function getBusinesses(db: Pool, req: Request, res: Response) {
+export async function getBusinesses(req: Request, res: Response) {
     let queryString:string = "SELECT * FROM business";
     let countString: string = "SELECT COUNT(*) AS count FROM business";
     const params:any[] = [];
@@ -160,7 +175,7 @@ export async function getBusinesses(db: Pool, req: Request, res: Response) {
     });
 }
 
-export async function getBusinessDetails(db: Pool, req: Request, res: Response) {
+export async function getBusinessDetails(req: Request, res: Response) {
     const businessQueryString: string = "SELECT * FROM business WHERE id=?";
     const businessParams: any[] = [ parseInt(req.params.id) ];
     const [ businessResults ] = await db.query(businessQueryString, businessParams);

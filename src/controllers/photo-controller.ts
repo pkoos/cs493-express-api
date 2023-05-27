@@ -3,10 +3,9 @@ import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
 
 import * as rh from './responses-helper';
 import { Photo } from '../models/photo';
-import { getPageSize, validatePageSize } from '..';
-import { validateHeaderName } from 'http';
+import { getPageSize, validatePageSize, db } from '../index';
 
-export async function addPhoto(db: Pool, req: Request, res: Response) {    
+export async function addPhoto(req: Request, res: Response) {    
     const new_photo: Photo = new Photo({
         id: -20,
         ownerId: req.body["ownerId"],
@@ -25,7 +24,7 @@ export async function addPhoto(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"photo": new_photo});
 }
 
-export async function modifyPhoto(db: Pool, req: Request, res: Response) {
+export async function modifyPhoto(req: Request, res: Response) {
     const queryString:string = "SELECT * FROM photo WHERE id=?";
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
@@ -63,7 +62,7 @@ export async function modifyPhoto(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"business": modified_photo});
 }
 
-export async function removePhoto(db: Pool, req: Request, res: Response) {
+export async function removePhoto(req: Request, res: Response) {
     const queryString:string = "SELECT * FROM photo WHERE id=?";
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
@@ -89,7 +88,7 @@ export async function removePhoto(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"message": "Removed Photo", "photo": found_photo});
 }
 
-export async function getPhotos(db: Pool, req: Request, res: Response) {
+export async function getPhotos(req: Request, res: Response) {
     let queryString:string = "SELECT * FROM photo WHERE owner_id=?";
     const params: any[] = [];
     if(!req.query.ownerId) {

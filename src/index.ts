@@ -39,19 +39,19 @@ const baseApiPath: string = "/api/v1";
 initializeDatabase();
 
 const addBusinessPath:string = `${baseApiPath}/business/add`;
-app.post(addBusinessPath, (req: Request, res: Response) => addNewBusiness(db, req, res));
+app.post(addBusinessPath, requireAuthentication, (req: Request, res: Response) => addNewBusiness(req, res));
 
 const modifyBusinessPath:string = (`${baseApiPath}/business/modify`);
-app.post(`${modifyBusinessPath}/:id`, (req: Request, res: Response) => modifyBusiness(db, req, res));
+app.post(`${modifyBusinessPath}/:id`, requireAuthentication, (req: Request, res: Response) => modifyBusiness(req, res));
 
 const removeBusinessPath:string = `${baseApiPath}/business/remove`;
-app.post(`${removeBusinessPath}/:id`, (req: Request, res: Response) => removeBusiness(db, req, res));
+app.post(`${removeBusinessPath}/:id`, requireAuthentication, (req: Request, res: Response) => removeBusiness(req, res));
 
 const businessDetailsPath:string = `${baseApiPath}/business`
-app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => getBusinessDetails(db, req, res));
+app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => getBusinessDetails(req, res));
 
 const getBusinessesPath:string = `${baseApiPath}/businesses`;
-app.get(getBusinessesPath, (req: Request, res: Response) => getBusinesses(db, req, res));
+app.get(getBusinessesPath, (req: Request, res: Response) => getBusinesses(req, res));
 
 const addReviewPath:string = `${baseApiPath}/review/add`;
 app.post(addReviewPath, requireAuthentication, (req: Request, res: Response) => addReview(req, res));
@@ -63,28 +63,28 @@ const removeReviewPath:string = `${baseApiPath}/review/remove`;
 app.post(`${removeReviewPath}/:id`, requireAuthentication, (req: Request, res: Response) => removeReview(req, res));
 
 const addPhotoPath:string = `${baseApiPath}/photo/add`
-app.post(addPhotoPath, (req: Request, res: Response) => addPhoto(db, req, res));
+app.post(addPhotoPath, requireAuthentication, (req: Request, res: Response) => addPhoto(req, res));
 
 const removePhotoPath:string = `${baseApiPath}/photo/remove`;
-app.post(`${removePhotoPath}/:id`, (req: Request, res: Response) => removePhoto(db, req, res));
+app.post(`${removePhotoPath}/:id`, requireAuthentication, (req: Request, res: Response) => removePhoto(req, res));
 
 const modifyPhotoPath:string = `${baseApiPath}/photo/modify`;
-app.post(`${modifyPhotoPath}/:id`, (req: Request, res: Response) => modifyPhoto(db, req, res));
+app.post(`${modifyPhotoPath}/:id`, requireAuthentication, (req: Request, res: Response) => modifyPhoto(req, res));
 
 const getphotosPath:string = `${baseApiPath}/photos`;
-app.get(getphotosPath, (req: Request, res: Response) => getPhotos(db, req, res));
+app.get(getphotosPath, requireAuthentication, (req: Request, res: Response) => getPhotos(req, res));
 
 const getReviewsPath: string = `${baseApiPath}/reviews`;
-app.get(getReviewsPath, (req: Request, res: Response) => getReviews(req, res));
+app.get(getReviewsPath, requireAuthentication, (req: Request, res: Response) => getReviews(req, res));
 
 const addUserPath: string = `${baseApiPath}/user/add`;
-app.post(addUserPath, (req: Request, res: Response) => addUser(db, req, res));
+app.post(addUserPath, (req: Request, res: Response) => addUser(req, res));
 
 const loginUserPath: string = `${baseApiPath}/user/login`;
-app.post(loginUserPath, (req: Request, res: Response) => loginUser(db, req, res));
+app.post(loginUserPath, (req: Request, res: Response) => loginUser(req, res));
 
 const userDetailsPath: string = `${baseApiPath}/users`;
-app.get(`${userDetailsPath}/:id`, (req: Request, res: Response) => getUserDetails(db, req, res));
+app.get(`${userDetailsPath}/:id`, requireAuthentication, (req: Request, res: Response) => getUserDetails(req, res));
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
