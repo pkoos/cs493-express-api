@@ -1,14 +1,25 @@
 import { Request, Response } from 'express';
-import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
+import { ResultSetHeader, OkPacket } from 'mysql2/promise';
 
 import * as rh from './responses-helper';
 
 import { Review } from '../models/review';
-import { getPageSize, validatePageSize } from '../index';
+import { getPageSize, validatePageSize, db } from '../index';
 
-export async function addReview(db: Pool, req: Request, res: Response) {    
+export async function addReview(req: Request, res: Response) {    
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
+        rh.errorInvalidBody(res);
+        return;
+    }
+
+    if(owner_id !== req.loggedInID) {
+        rh.errorNoModify(res, "Review");
+        return;
+    }
+
     const prevQueryString:string = "SELECT * FROM review WHERE owner_id=? AND business_id=?";
-    const prevParams:any[] = [ req.body['ownerId'], req.body['businessId'] ];
+    const prevParams:any[] = [ owner_id, req.body['businessId'] ];
     const [ prevResults ] = await db.query(prevQueryString, prevParams);
     if((prevResults as OkPacket[]).length > 0) {
         rh.genericErrorResponse(res, 403, "A user can only leave one Review per Business.");
@@ -34,7 +45,7 @@ export async function addReview(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"review": new_review});
 }
 
-export async function modifyReview(db: Pool, req: Request, res: Response) {
+export async function modifyReview(req: Request, res: Response) {
     const owner_id = req.body['ownerId'];
     if(!owner_id) {
         rh.errorInvalidBody(res);
@@ -85,7 +96,17 @@ export async function modifyReview(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"review": modified_review});
 }
 
-export async function removeReview(db: Pool, req: Request, res: Response) {
+export async function removeReview(req: Request, res: Response) {
+    const owner_id: number = req.body["ownerId"];
+    if(!owner_id) {
+        rh.errorInvalidBody(res);
+        return;
+    }
+    if(owner_id !== req.loggedInID) {
+        rh.errorNoModify(res, "Review");
+        return;
+    }
+
     const queryString:string = "SELECT * FROM review WHERE id=?";
     const params: any[] = [parseInt(req.params.id)];
     const [results] = await db.query(queryString, params);
@@ -101,12 +122,6 @@ export async function removeReview(db: Pool, req: Request, res: Response) {
         return;
     }
 
-    const owner_id: number = req.body["ownerId"];
-    if(!owner_id) {
-        rh.errorInvalidBody(res);
-        return;
-    }
-
     if(owner_id != found_review.ownerId) {
         rh.errorNoRemove(res, "Review");
         return;
@@ -116,7 +131,7 @@ export async function removeReview(db: Pool, req: Request, res: Response) {
     rh.successResponse(res, {"message": "Removed Review", "review": found_review});
 }
 
-export async function getReviews(db: Pool, req: Request, res: Response) {
+export async function getReviews(req: Request, res: Response) {
     let queryString:string = "SELECT * FROM review WHERE owner_id=?";
     const params: any[] = [];
     if(!req.query.ownerId) {

@@ -17,7 +17,7 @@ import { addUser, getUserDetails, loginUser } from './controllers/user-controlle
 
 const app: Express = express();
 const port = process.env.PORT ?? 8000;
-const db:Pool = mysql2.createPool({
+export const db:Pool = mysql2.createPool({
     connectionLimit: 10,
     user: process.env.MYSQL_USER,
     password: process.env.MYSQL_PASSWORD,
@@ -49,16 +49,16 @@ const businessDetailsPath:string = `${baseApiPath}/business`
 app.get(`${businessDetailsPath}/:id`, (req: Request, res: Response) => getBusinessDetails(db, req, res));
 
 const getBusinessesPath:string = `${baseApiPath}/businesses`;
-app.get(getBusinessesPath, async (req: Request, res: Response) => getBusinesses(db, req, res));
+app.get(getBusinessesPath, (req: Request, res: Response) => getBusinesses(db, req, res));
 
 const addReviewPath:string = `${baseApiPath}/review/add`;
-app.post(addReviewPath, (req: Request, res: Response) => addReview(db, req, res));
+app.post(addReviewPath, requireAuthentication, (req: Request, res: Response) => addReview(req, res));
 
 const modifyReviewPath:string = `${baseApiPath}/review/modify`;
-app.post(`${modifyReviewPath}/:id`, requireAuthentication, (req: Request, res: Response) => modifyReview(db, req, res));
+app.post(`${modifyReviewPath}/:id`, requireAuthentication, (req: Request, res: Response) => modifyReview(req, res));
 
 const removeReviewPath:string = `${baseApiPath}/review/remove`; 
-app.post(`${removeReviewPath}/:id`, (req: Request, res: Response) => removeReview(db, req, res));
+app.post(`${removeReviewPath}/:id`, requireAuthentication, (req: Request, res: Response) => removeReview(req, res));
 
 const addPhotoPath:string = `${baseApiPath}/photo/add`
 app.post(addPhotoPath, (req: Request, res: Response) => addPhoto(db, req, res));
@@ -73,7 +73,7 @@ const getphotosPath:string = `${baseApiPath}/photos`;
 app.get(getphotosPath, (req: Request, res: Response) => getPhotos(db, req, res));
 
 const getReviewsPath: string = `${baseApiPath}/reviews`;
-app.get(getReviewsPath, (req: Request, res: Response) => getReviews(db, req, res));
+app.get(getReviewsPath, (req: Request, res: Response) => getReviews(req, res));
 
 const addUserPath: string = `${baseApiPath}/user/add`;
 app.post(addUserPath, (req: Request, res: Response) => addUser(db, req, res));
