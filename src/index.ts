@@ -6,6 +6,8 @@ import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
 import * as jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
+import multer from 'multer';
+import crypto from 'crypto';
 
 /*
     Project Imports
@@ -15,6 +17,11 @@ import { getBusinesses, addNewBusiness, modifyBusiness, removeBusiness, getBusin
 import { addReview, modifyReview, removeReview, getReviews } from './controllers/review-controller';
 import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './controllers/photo-controller';
 import { addUser, getUserDetails, loginUser } from './controllers/user-controller';
+
+const imageTypes: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png'
+};
 
 const app: Express = express();
 const port = process.env.PORT ?? 8000;
@@ -27,11 +34,32 @@ export const db:Pool = mysql2.createPool({
     port: 3306
 });
 
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: `${__dirname}/uploads`,
+        filename: (req: Request, file, callback: CallableFunction) => {
+            const filename: string = crypto.pseudoRandomBytes(16).toString('hex');
+            const extension: string = imageTypes[file.mimetype];
+            callback(null, `${filename}.${extension}`);
+        }
+    }),
+    fileFilter: (req: Request, file, callback: CallableFunction) => {
+        callback(null, !!imageTypes[file.mimetype]);
+    }
+});
+
+
 dotenv.config();
 
 app.use(bodyParser.urlencoded({
     extended: true
 }));
+app.use('*', (err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error(err);
+    res.status(500).send({
+        err: "An error occurred. Try again later."
+    });
+});
 app.use(bodyParser.json());
 
 const pageSize: number = 5;
@@ -85,6 +113,11 @@ app.post(loginUserPath, (req: Request, res: Response) => loginUser(req, res));
 
 const userDetailsPath: string = `${baseApiPath}/users`;
 app.get(`${userDetailsPath}/:id`, requireAuthentication, (req: Request, res: Response) => getUserDetails(req, res));
+
+const addImagePath: string = `${baseApiPath}/images`;
+app.post(addImagePath, upload.single('image'), (req: Request, res: Response, next: NextFunction) => {
+
+});
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
