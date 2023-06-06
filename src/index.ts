@@ -1,12 +1,12 @@
 /*
     Package Imports
 */
-import express, { Express, NextFunction, Request, Response } from 'express';
+import express, { Express, NextFunction, Request, Response,  } from 'express';
 import bodyParser from 'body-parser';
 import mysql2, { Pool } from 'mysql2/promise';
 import * as jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
-import multer from 'multer';
+import multer, {Multer} from 'multer';
 import crypto from 'crypto';
 
 /*
@@ -17,6 +17,9 @@ import { getBusinesses, addNewBusiness, modifyBusiness, removeBusiness, getBusin
 import { addReview, modifyReview, removeReview, getReviews } from './controllers/review-controller';
 import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './controllers/photo-controller';
 import { addUser, getUserDetails, loginUser } from './controllers/user-controller';
+import { Image } from './models/image';
+import { resolve } from 'path';
+import { nextTick } from 'process';
 
 const imageTypes: Record<string, string> = {
     'image/jpeg': 'jpg',
@@ -34,16 +37,16 @@ export const db:Pool = mysql2.createPool({
     port: 3306
 });
 
-const upload = multer({
+const upload: Multer = multer({
     storage: multer.diskStorage({
         destination: `${__dirname}/uploads`,
-        filename: (req: Request, file, callback: CallableFunction) => {
+        filename: (req: Request, file: Express.Multer.File, callback: CallableFunction) => {
             const filename: string = crypto.pseudoRandomBytes(16).toString('hex');
             const extension: string = imageTypes[file.mimetype];
             callback(null, `${filename}.${extension}`);
         }
     }),
-    fileFilter: (req: Request, file, callback: CallableFunction) => {
+    fileFilter: (req: Request, file: Express.Multer.File, callback: CallableFunction) => {
         callback(null, !!imageTypes[file.mimetype]);
     }
 });
@@ -54,6 +57,7 @@ dotenv.config();
 app.use(bodyParser.urlencoded({
     extended: true
 }));
+
 app.use('*', (err: Error, req: Request, res: Response, next: NextFunction) => {
     console.error(err);
     res.status(500).send({
@@ -115,8 +119,9 @@ const userDetailsPath: string = `${baseApiPath}/users`;
 app.get(`${userDetailsPath}/:id`, requireAuthentication, (req: Request, res: Response) => getUserDetails(req, res));
 
 const addImagePath: string = `${baseApiPath}/images`;
-app.post(addImagePath, upload.single('image'), (req: Request, res: Response, next: NextFunction) => {
+app.post(addImagePath, upload.single('image'), async (req: Request, res: Response, next: NextFunction) => {
     console.log("request came in");
+    console.log(`file: ${req.file?.filename} original name: ${req.file?.originalname} size: ${req.file?.size}`);
     res.status(500).json({status: "Received"});
 });
 
@@ -208,6 +213,11 @@ export function requireAuthentication(req: Request, res: Response, next: NextFun
         return;
     }
     next();
+}
+
+
+async function saveImageInfo(req: Request, res: Response, image: Image) {
+    // need MySQL to insert image into database
 }
 
 app.listen(port, () => {

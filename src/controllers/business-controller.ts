@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Pool, ResultSetHeader, OkPacket } from 'mysql2/promise';
+import { ResultSetHeader, OkPacket } from 'mysql2/promise';
 import { getPageSize, validatePageSize, db } from '../index';
 
 import * as rh from './responses-helper';
