@@ -116,7 +116,8 @@ app.get(`${userDetailsPath}/:id`, requireAuthentication, (req: Request, res: Res
 
 const addImagePath: string = `${baseApiPath}/images`;
 app.post(addImagePath, upload.single('image'), (req: Request, res: Response, next: NextFunction) => {
-
+    console.log("request came in");
+    res.status(500).json({status: "Received"});
 });
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
