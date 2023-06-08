@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Pool, ResultSetHeader } from 'mysql2/promise';
+import { ResultSetHeader } from 'mysql2/promise';
 import { compare, hash } from 'bcryptjs';
 
 import * as rh from "./responses-helper";

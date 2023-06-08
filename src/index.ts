@@ -18,8 +18,7 @@ import { addReview, modifyReview, removeReview, getReviews } from './controllers
 import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './controllers/photo-controller';
 import { addUser, getUserDetails, loginUser } from './controllers/user-controller';
 import { Image } from './models/image';
-import { resolve } from 'path';
-import { nextTick } from 'process';
+import { addNewImage } from './controllers/image-controller';
 
 const imageTypes: Record<string, string> = {
     'image/jpeg': 'jpg',
@@ -37,6 +36,12 @@ export const db:Pool = mysql2.createPool({
     port: 3306
 });
 
+// const upload: Multer = multer({
+//     storage: multer.memoryStorage(),
+//     fileFilter: (req: Request, file: Express.Multer.File, callback) => {
+//         callback(null, !!imageTypes[file.mimetype]);
+//     }
+// });
 const upload: Multer = multer({
     storage: multer.diskStorage({
         destination: `${__dirname}/uploads`,
@@ -119,11 +124,7 @@ const userDetailsPath: string = `${baseApiPath}/users`;
 app.get(`${userDetailsPath}/:id`, requireAuthentication, (req: Request, res: Response) => getUserDetails(req, res));
 
 const addImagePath: string = `${baseApiPath}/images`;
-app.post(addImagePath, upload.single('image'), async (req: Request, res: Response, next: NextFunction) => {
-    console.log("request came in");
-    console.log(`file: ${req.file?.filename} original name: ${req.file?.originalname} size: ${req.file?.size}`);
-    res.status(500).json({status: "Received"});
-});
+app.post(addImagePath, upload.single('image'), requireAuthentication, (req: Request, res: Response) => addNewImage(req, res));
 
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
@@ -167,12 +168,24 @@ async function initializeDatabase() {
         email VARCHAR(255) NOT NULL,
         password VARCHAR(60) NOT NULL,
         admin BOOLEAN NOT NULL
-    )
+    )`;
+
+    const createImageTable: string = 
     `
-    await db.execute(createUserTable);
+    CREATE TABLE IF NOT EXISTS image(
+        id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        content_type VARCHAR(10) NOT NULL,
+        path VARCHAR(1024) NOT NULL,
+        owner_id INT UNSIGNED NOT NULL,
+        image_data MEDIUMBLOB,
+        thumbnail_data MEDIUMBLOB
+    )`;
+    
     await db.execute(createBusinessTable);
     await db.execute(createReviewTable);
     await db.execute(createPhotoTable);
+    await db.execute(createUserTable);
+    await db.execute(createImageTable);
 }
 
 export function getPageSize(): number {
