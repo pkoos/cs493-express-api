@@ -3,7 +3,7 @@
 */
 import express, { Express, NextFunction, Request, Response,  } from 'express';
 import bodyParser from 'body-parser';
-import mysql2, { Pool } from 'mysql2/promise';
+import mysql2, { Pool, OkPacket } from 'mysql2/promise';
 import * as jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import multer, {Multer} from 'multer';
@@ -19,6 +19,7 @@ import { addPhoto, getPhotos, modifyPhoto, removePhoto } from './controllers/pho
 import { addUser, getUserDetails, loginUser } from './controllers/user-controller';
 import { Image } from './models/image';
 import { addNewImage } from './controllers/image-controller';
+import fs from 'fs';
 
 const imageTypes: Record<string, string> = {
     'image/jpeg': 'jpg',
@@ -126,6 +127,48 @@ app.get(`${userDetailsPath}/:id`, requireAuthentication, (req: Request, res: Res
 const addImagePath: string = `${baseApiPath}/images`;
 app.post(addImagePath, upload.single('image'), requireAuthentication, (req: Request, res: Response) => addNewImage(req, res));
 
+const getImagesPath: string = `${baseApiPath}/images`;
+app.get(`${getImagesPath}/:id`, async (req: Request, res: Response, next: NextFunction) => {
+    // Get image from database
+    // Build image url
+    // Send response
+
+    const image_id: number = parseInt(req.params.id);
+    const queryString: string = "SELECT * FROM image WHERE id=?";
+    const params: any[] = [image_id];
+    const [results] = await db.query(queryString, params);
+    if((results as OkPacket[]).length < 1){
+        rh.errorNotFound(res, "Image");
+        return;
+    }
+    const found_image: Image = Image.fromDatabase((results as any[]));
+    delete found_image.path;
+    const response_body = {
+        _id: found_image.id,
+        url: `/media/images/${found_image.filename}`,
+        contentType: found_image.image_content_type,
+        userId: found_image.owner_id
+    }
+    res.status(200).send(response_body);
+    
+});
+
+const staticImageURLPath: string = `/media/images`;
+app.get(`${staticImageURLPath}/:filename`, async (req:Request, res: Response) => {
+    const filename: string = req.params.filename;
+    const queryString: string = "SELECT * FROM image WHERE filename=?";
+    const [ db_results ] = await db.query(queryString, [filename]);
+    if((db_results as OkPacket[]).length < 1){
+        rh.errorNotFound(res, "Image");
+        return;
+    }
+
+    const found_image: Image = Image.fromDatabase(db_results as any[]);
+    res.status(200).contentType(found_image.image_content_type).send(found_image.image_data);
+
+
+});
+
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
 
 async function initializeDatabase() {
@@ -174,10 +217,12 @@ async function initializeDatabase() {
     `
     CREATE TABLE IF NOT EXISTS image(
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        content_type VARCHAR(10) NOT NULL,
-        path VARCHAR(1024) NOT NULL,
         owner_id INT UNSIGNED NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        path VARCHAR(1024) NOT NULL,
+        image_content_type VARCHAR(10),
         image_data MEDIUMBLOB,
+        thumbnail_content_type VARCHAR(10),
         thumbnail_data MEDIUMBLOB
     )`;
     
@@ -228,9 +273,17 @@ export function requireAuthentication(req: Request, res: Response, next: NextFun
     next();
 }
 
-
-async function saveImageInfo(req: Request, res: Response, image: Image) {
-    // need MySQL to insert image into database
+function removeUploadedFile(file: Express.Multer.File) {
+    return new Promise((resolve, reject) => {
+        fs.unlink(file.path, (err) => {
+            if(err) {
+                reject(err);
+            }
+            else {
+                console.log(`File deleted from ${file.path}.`);
+            }
+        });
+    });
 }
 
 app.listen(port, () => {
