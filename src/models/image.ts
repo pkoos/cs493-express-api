@@ -1,13 +1,15 @@
 import {OkPacket} from 'mysql2/promise';
+import { db } from '..';
 
 export class Image {
     id: number = -1;
     owner_id: number = -1;
     filename: string = "";
-    image_content_type: string = "";
     path?: string = "";
     image_data?: Buffer;
-    thumbnail_data = undefined;
+    image_content_type: string = "";
+    thumbnail_content_type: string = "";
+    thumbnail_data?: Buffer;
 
     public constructor(init?: Partial<Image>) {
         Object.assign(this, init);
@@ -33,7 +35,8 @@ export class Image {
             image_content_type: db_image.image_content_type,
             path: db_image.path,
             image_data: db_image.image_data,
-            thumbnail_data: db_image.thumbnail_data
+            thumbnail_data: db_image.thumbnail_data,
+            thumbnail_content_type: db_image.thumbnail_content_type
         });
 
         return image;
@@ -64,6 +67,11 @@ export class Image {
         return [];
     }
 
+    async update() {
+        const update_query: string = "UPDATE image SET owner_id=?, filename=?, path=?, image_content_type=?, image_data=?, thumbnail_content_type=?, thumbnail_data=? WHERE id=?";
+        const update_params: any[] = [this.owner_id, this.filename, this.path, this.image_content_type, this.image_data, this.thumbnail_content_type, this.thumbnail_data, this.id];
+        await db.query(update_query, update_params);
+    }
     static generateList(data: OkPacket[]): Image[] {
         const return_value: Image[] = [];
         return return_value;

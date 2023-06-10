@@ -8,6 +8,7 @@ import * as jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import multer, {Multer} from 'multer';
 import crypto from 'crypto';
+import amqp from 'amqplib';
 
 /*
     Project Imports
@@ -37,12 +38,19 @@ export const db:Pool = mysql2.createPool({
     port: 3306
 });
 
+    const rabbitmqHost = process.env.RABBITMQ_HOST ?? "localhost";
+    const rabbitmqUrl = `amqp://${rabbitmqHost}`;
+    export var connection: amqp.Connection;
+    export var channel: amqp.Channel;
+
 // const upload: Multer = multer({
 //     storage: multer.memoryStorage(),
 //     fileFilter: (req: Request, file: Express.Multer.File, callback) => {
 //         callback(null, !!imageTypes[file.mimetype]);
 //     }
 // });
+
+// req.file?.buffer
 const upload: Multer = multer({
     storage: multer.diskStorage({
         destination: `${__dirname}/uploads`,
@@ -74,7 +82,6 @@ app.use(bodyParser.json());
 
 const pageSize: number = 5;
 const baseApiPath: string = "/api/v1";
-initializeDatabase();
 
 const addBusinessPath:string = `${baseApiPath}/business/add`;
 app.post(addBusinessPath, requireAuthentication, (req: Request, res: Response) => addNewBusiness(req, res));
@@ -145,8 +152,9 @@ app.get(`${getImagesPath}/:id`, async (req: Request, res: Response, next: NextFu
     delete found_image.path;
     const response_body = {
         _id: found_image.id,
-        url: `/media/images/${found_image.filename}`,
+        image: `/media/images/${found_image.filename}`,
         contentType: found_image.image_content_type,
+        thumbnail: `/media/thumbnails/${found_image.filename}`,
         userId: found_image.owner_id
     }
     res.status(200).send(response_body);
@@ -169,7 +177,28 @@ app.get(`${staticImageURLPath}/:filename`, async (req:Request, res: Response) =>
 
 });
 
+const staticThumbnailURLPath: string = `/media/thumbnails`;
+app.get(`${staticThumbnailURLPath}/:filename`, async (req:Request, res: Response) => {
+    const filename: string = req.params.filename;
+    const queryString: string = "SELECT * FROM image WHERE filename=?";
+    const [ db_results ] = await db.query(queryString, [filename]);
+    if((db_results as OkPacket[]).length < 1){
+        rh.errorNotFound(res, "Image");
+        return;
+    }
+
+    const found_image: Image = Image.fromDatabase(db_results as any[]);
+    console.log(found_image.thumbnail_content_type);
+    res.status(200).contentType(found_image.thumbnail_content_type).send(found_image.thumbnail_data);
+});
+
 // https://stackoverflow.com/questions/33547583/safe-way-to-extract-property-names
+
+async function initializeAMPQ() {
+    connection = await amqp.connect(rabbitmqUrl);
+    channel = await connection.createChannel();
+    await channel.assertQueue('generateThumbnail');
+}
 
 async function initializeDatabase() {
     const createBusinessTable:string = 
@@ -286,6 +315,14 @@ function removeUploadedFile(file: Express.Multer.File) {
     });
 }
 
-app.listen(port, () => {
-    console.log(`⚡️[server]: Server is running at http://localhost:${port}.`);
-});
+async function initializeTheThing() {
+    // TODO: Figure out the corrrect order
+    await initializeDatabase();
+    await initializeAMPQ();
+
+    app.listen(port, () => {
+        console.log(`⚡️[server]: Server is running at http://localhost:${port}.`);
+    });
+}
+
+initializeTheThing();
