@@ -1,7 +1,7 @@
 import {OkPacket} from 'mysql2/promise';
-import { db } from '..';
+import { DatabaseModel } from './database_model';
 
-export class Image {
+export class Image extends DatabaseModel<Image> {
     id: number = -1;
     owner_id: number = -1;
     filename: string = "";
@@ -11,8 +11,11 @@ export class Image {
     thumbnail_content_type: string = "";
     thumbnail_data?: Buffer;
 
-    public constructor(init?: Partial<Image>) {
-        Object.assign(this, init);
+    table_name: string = 'image';
+
+    public constructor(data?: Partial<Image>) {
+        super();
+        Object.assign(this, data);
     }
 
     isValid(): boolean {
@@ -26,20 +29,19 @@ export class Image {
         return valid;
     }
 
-    static fromDatabase(row: any[]): Image {
+    fromDatabase(row: any[]): Image {
         const db_image: any = row[0];
-        const image: Image = new Image({
-            id: db_image.id,
-            owner_id: db_image.owner_id,
-            filename: db_image.filename,
-            image_content_type: db_image.image_content_type,
-            path: db_image.path,
-            image_data: db_image.image_data,
-            thumbnail_data: db_image.thumbnail_data,
-            thumbnail_content_type: db_image.thumbnail_content_type
-        });
-
-        return image;
+        
+        this.id = db_image.id;
+        this.owner_id = db_image.owner_id;
+        this.filename = db_image.filename;
+        this.image_content_type = db_image.image_content_type;
+        this.path = db_image.path;
+        this.image_data = db_image.image_data;
+        this.thumbnail_data = db_image.thumbnail_data;
+        this.thumbnail_content_type = db_image.thumbnail_content_type;
+        
+        return this;
     }
 
     static deleteString(): string {
@@ -50,6 +52,16 @@ export class Image {
         return [this.id];
     }
 
+    insertString(): string {
+        return `(image_content_type, path, filename, owner_id, image_data) VALUES (?, ?, ?, ?, ?)`;
+    }
+
+    updateString(): string {
+        return `
+            owner_id=?, filename=?, path=?, image_content_type=?, 
+            image_data=?, thumbnail_content_type=?, thumbnail_data=?
+        `;
+    }
     static insertString(): string {
         return `INSERT INTO image (image_content_type, path, filename, owner_id, image_data)
             VALUES(?, ?, ?, ?, ?)`;
@@ -67,13 +79,12 @@ export class Image {
         return [];
     }
 
-    async update() {
-        const update_query: string = "UPDATE image SET owner_id=?, filename=?, path=?, image_content_type=?, image_data=?, thumbnail_content_type=?, thumbnail_data=? WHERE id=?";
-        const update_params: any[] = [this.owner_id, this.filename, this.path, this.image_content_type, this.image_data, this.thumbnail_content_type, this.thumbnail_data, this.id];
-        await db.query(update_query, update_params);
-    }
     static generateList(data: OkPacket[]): Image[] {
         const return_value: Image[] = [];
         return return_value;
+    }
+
+    updateParams(): any[] {
+        return [this.owner_id, this.filename, this.path, this.image_content_type, this.image_data, this.thumbnail_content_type, this.thumbnail_data, this.id];
     }
 }

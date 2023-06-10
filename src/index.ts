@@ -148,7 +148,8 @@ app.get(`${getImagesPath}/:id`, async (req: Request, res: Response, next: NextFu
         rh.errorNotFound(res, "Image");
         return;
     }
-    const found_image: Image = Image.fromDatabase((results as any[]));
+    // const found_image: Image = Image.fromDatabase((results as any[]));
+    const found_image: Image = await new Image().find(image_id);
     delete found_image.path;
     const response_body = {
         _id: found_image.id,
@@ -171,7 +172,8 @@ app.get(`${staticImageURLPath}/:filename`, async (req:Request, res: Response) =>
         return;
     }
 
-    const found_image: Image = Image.fromDatabase(db_results as any[]);
+    const found_image: Image = await new Image().search("filename=?", [filename]);
+    // const found_image: Image = Image.fromDatabase(db_results as any[]);
     res.status(200).contentType(found_image.image_content_type).send(found_image.image_data);
 
 
@@ -187,8 +189,7 @@ app.get(`${staticThumbnailURLPath}/:filename`, async (req:Request, res: Response
         return;
     }
 
-    const found_image: Image = Image.fromDatabase(db_results as any[]);
-    console.log(found_image.thumbnail_content_type);
+    const found_image: Image = await new Image().search("filename=?", [filename]);
     res.status(200).contentType(found_image.thumbnail_content_type).send(found_image.thumbnail_data);
 });
 

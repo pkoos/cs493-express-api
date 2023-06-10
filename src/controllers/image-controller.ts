@@ -4,8 +4,8 @@ import { Image } from "../models/image";
 import { channel, connection, db } from "..";
 import { ResultSetHeader } from "mysql2/promise";
 import fs from 'fs';
-import sizeOf from 'image-size';
 import Jimp from "jimp";
+import { ConsumeMessage } from "amqplib";
 
 export async function addNewImage(req: Request, res: Response) {
     const owner_id: number = req.body["ownerId"];
@@ -22,25 +22,22 @@ export async function addNewImage(req: Request, res: Response) {
     const new_image: Image = new Image({
         id: -20,
         owner_id: req.body["ownerId"],
-        filename: req.file?.filename,
-        image_content_type: req.file?.mimetype,
+        filename: req.file?.filename as string,
+        image_content_type: req.file?.mimetype as string,
         path: req.file?.path,
         image_data:  fs.readFileSync(req.file?.path as fs.PathOrFileDescriptor)
     });
-
     if(!new_image.isValid()) {
         rh.errorInvalidBody(res);
         return
     }
-
-    const [db_results] = await db.query(Image.insertString(), new_image.insertParams());
-    new_image.id = (db_results as ResultSetHeader).insertId;
+    const new_id: number = await new_image.insert();
+    new_image.id = new_id;
     delete new_image.path;
     delete new_image.image_data;
 
     const id_buffer: Buffer = Buffer.from(String(new_image.id));
     channel.sendToQueue('generateThumbnail', id_buffer);
-    setTimeout(() => { connection.close(); }, 500);
 
     await generateThumbnail();
     rh.successResponse(res, {"image": new_image});
@@ -69,22 +66,18 @@ export async function saveImageInfo(image: Image): Promise<number> {
 }
 
 export async function getImageInfoById(id: number): Promise<Image> {
-    const queryString: string = "SELECT * FROM image WHERE id=?";
-    const [db_results] = await db.query(queryString, [id]);
-    
-    return Image.fromDatabase((db_results as any[]));
+    return new Image().find(id);
 }
 
 async function generateThumbnail() {
+    var image_id: number;
 
-
-    channel.consume('generateThumbnail', async (msg) => {
-        const image_id = msg?.content.toString();
-        const queryString: string = "SELECT * FROM image WHERE id=?";
-        const params: any[] = [image_id];
-        const [db_results] = await db.query(queryString, params);
-        const found_image: Image = Image.fromDatabase(db_results as any[]);
-        // const dimensions = await sizeOf(found_image.image_data as Buffer);
+    channel.consume('generateThumbnail', async (msg?) => {
+        if(msg) {
+            image_id = parseInt(msg?.content.toString() as string);
+        }
+        channel.ack(msg as ConsumeMessage);
+        const found_image: Image = await new Image().find(image_id);
         const thumbnail = await Jimp.read(found_image.image_data as Buffer);
         thumbnail.resize(100, 100).quality(60);
         found_image.thumbnail_data = await thumbnail.getBufferAsync(found_image.image_content_type);
