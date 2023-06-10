@@ -1,5 +1,19 @@
 version: '3'
 services:
+  rmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    expose:
+      - 5672
+      - 15672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 15s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
   db:
     image: mysql
     ports:
@@ -31,8 +45,11 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_HOST: ${MYSQL_HOST}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
     depends_on:
       db:
+        condition: service_healthy
+      rmq:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/businesses"]
